@@ -1,0 +1,133 @@
+{
+  "best-products": [
+    {
+      "id": "1",
+      "kode": "K-01",
+      "nama": "Sate Ayam",
+      "harga": 15000,
+      "is_ready": true,
+      "gambar": "sate-ayam.jpg"
+    },
+    {
+      "id": "2",
+      "kode": "K-02",
+      "nama": "Nasi Goreng Telur",
+      "harga": 20000,
+      "is_ready": true,
+      "gambar": "nasi-goreng.jpg"
+    },
+    {
+      "id": "3",
+      "kode": "K-03",
+      "nama": "Rendang",
+      "harga": 25000,
+      "is_ready": true,
+      "gambar": "rendangg.jpg"
+    }
+  ],
+  "products": [
+    {
+      "id": "1",
+      "kode": "K-01",
+      "nama": "Sate Ayam",
+      "harga": 15000,
+      "is_ready": true,
+      "gambar": "sate-ayam.jpg"
+    },
+    {
+      "id": "2",
+      "kode": "K-02",
+      "nama": "Nasi Goreng Telur",
+      "harga": 20000,
+      "is_ready": true,
+      "gambar": "nasi-goreng.jpg"
+    },
+    {
+      "id": "3",
+      "kode": "K-03",
+      "nama": "Rendang",
+      "harga": 25000,
+      "is_ready": true,
+      "gambar": "rendangg.jpg"
+    },
+    {
+      "id": "4",
+      "kode": "K-04",
+      "nama": "Rawon",
+      "harga": 30000,
+      "is_ready": true,
+      "gambar": "rawon.jpg"
+    },
+    {
+      "id": "5",
+      "kode": "K-05",
+      "nama": "Soto Ayam",
+      "harga": 35000,
+      "is_ready": false,
+      "gambar": "soto-ayam.jpg"
+    },
+    {
+      "id": "6",
+      "kode": "K-06",
+      "nama": "Bakso",
+      "harga": 40000,
+      "is_ready": true,
+      "gambar": "bakso.jpg"
+    },
+    {
+      "id": "7",
+      "kode": "K-07",
+      "nama": "Ayam Goreng",
+      "harga": 45000,
+      "is_ready": true,
+      "gambar": "ayam-goreng.jpg"
+    },
+    {
+      "id": "8",
+      "kode": "K-08",
+      "nama": "Gurame Bakar",
+      "harga": 50000,
+      "is_ready": false,
+      "gambar": "gurame-bakar.jpeg"
+    },
+    {
+      "id": "9",
+      "kode": "K-09",
+      "nama": "Kakap Asem Manis",
+      "harga": 55000,
+      "is_ready": true,
+      "gambar": "kakap.jpg"
+    },
+    {
+      "id": "10",
+      "kode": "K-10",
+      "nama": "Pecel Lele",
+      "harga": 60000,
+      "is_ready": false,
+      "gambar": "pecel-lele.jpg"
+    }
+  ],
+  "keranjang": [],
+  "pesanan": [
+    {
+      "id": "4d3c",
+      "nama": "hafi",
+      "noMeja": "2022",
+      "keranjang": [
+        {
+          "id": "226b",
+          "jumlah_pemesanan": "2",
+          "keterangan": "tidak pakai bumbu sop\n",
+          "products": {
+            "id": "1",
+            "kode": "K-01",
+            "nama": "Sate Ayam",
+            "harga": 15000,
+            "is_ready": true,
+            "gambar": "sate-ayam.jpg"
+          }
+        }
+      ]
+    }
+  ]
+}
