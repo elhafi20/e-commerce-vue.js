@@ -24,7 +24,7 @@
       <div class="row">
         <div class="col">
           <h2>Keranjang <strong>Saya</strong></h2>
-          <div class="table-responsiv mt-3">
+          <div class="table-responsive mt-3">
             <table class="table">
               <thead>
                 <tr>
@@ -43,9 +43,7 @@
                   <th>{{ index + 1 }}</th>
                   <td>
                     <img
-                      :src="
-                        require('../assets/images/' + keranjang.products.gambar)
-                      "
+                      :src="keranjang.products.gambar"
                       class="img-fluid shadow"
                       width="250"
                     />
@@ -120,7 +118,8 @@
 
 <script>
 import Navbar from "@/components/Navbar.vue";
-import axios from "axios";
+import { collection, getDocs, deleteDoc, doc, addDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 
 export default {
   name: "Keranjang",
@@ -134,65 +133,58 @@ export default {
     };
   },
   methods: {
-    setKeranjangs(data) {
-      this.keranjang = data;
+    async fetchKeranjang() {
+      try {
+        const keranjangRef = collection(db, "keranjang");
+        const querySnapshot = await getDocs(keranjangRef);
+        this.keranjang = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+      } catch (error) {
+        console.error("Gagal mengambil data keranjang: ", error);
+      }
     },
-    hapusKeranjang(id) {
-      axios
-        .delete(`http://localhost:3000/keranjang/${id}`)
-        .then(() => {
-          this.updateKeranjang(); // Update data setelah penghapusan
-          this.$toast.success("Item berhasil dihapus dari keranjang", {
-            type: "success",
-            position: "top-right",
-            duration: 3000,
-            dismissible: true,
-          });
-        })
-        .catch((error) => {
-          console.error(error);
+    async hapusKeranjang(id) {
+      try {
+        await deleteDoc(doc(db, "keranjang", id));
+        this.fetchKeranjang();
+        this.$toast.success("Item berhasil dihapus dari keranjang", {
+          type: "success",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
         });
+      } catch (error) {
+        console.error("Gagal menghapus item: ", error);
+      }
     },
-    updateKeranjang() {
-      axios
-        .get(`http://localhost:3000/keranjang/`)
-        .then((response) => {
-          this.setKeranjangs(response.data);
-          this.$toast.success("Data keranjang berhasil diperbarui", {
-            type: "success",
-            position: "top-right",
-            duration: 3000,
-            dismissible: true,
-          });
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    },
-    checkout() {
+    async checkout() {
       if (this.pesan.nama && this.pesan.noMeja) {
-        this.pesan.keranjang = this.keranjang;
-        axios
-          .post("http://localhost:3000/pesanan", this.pesan)
-          .then(() => {
-
-            //hapus semua keranjang
-            this.keranjang.map(function (item) {
-              return axios
-                .delete("http://localhost:3000/keranjang/" + item.id)
-                .catch((error) => console.log(error));
-            });
-            this.$router.push({ path: "/pesanan-sukses" });
-            this.$toast.success("Sukses Dipesan", {
-              type: "success",
-              position: "top-right",
-              duration: 3000,
-              dismissible: true,
-            });
-          })
-          .catch((err) => {
-            console.error("Terjadi kesalahan saat mengirim data:", err);
+        try {
+          // Simpan data pesanan ke Firestore
+          await addDoc(collection(db, "pesanan"), {
+            nama: this.pesan.nama,
+            noMeja: this.pesan.noMeja,
+            keranjang: this.keranjang,
           });
+
+          // Hapus semua item di keranjang
+          const deletePromises = this.keranjang.map((item) =>
+            deleteDoc(doc(db, "keranjang", item.id))
+          );
+          await Promise.all(deletePromises);
+
+          this.$router.push({ path: "/pesanan-sukses" });
+          this.$toast.success("Sukses Dipesan", {
+            type: "success",
+            position: "top-right",
+            duration: 3000,
+            dismissible: true,
+          });
+        } catch (error) {
+          console.error("Terjadi kesalahan saat memproses checkout: ", error);
+        }
       } else {
         this.$toast.error("Nama dan Nomor Meja Harus Di Isi", {
           type: "error",
@@ -204,7 +196,7 @@ export default {
     },
   },
   mounted() {
-    this.updateKeranjang(); // Load data keranjang saat komponen dimuat
+    this.fetchKeranjang(); // Ambil data keranjang saat komponen dimuat
   },
   computed: {
     totalHarga() {
@@ -218,10 +210,3 @@ export default {
 
 <style>
 </style>
-
-
-
-
-
-
-

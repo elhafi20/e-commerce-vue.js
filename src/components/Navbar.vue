@@ -19,10 +19,10 @@
           <!-- Right aligned nav items -->
           <b-navbar-nav class="ml-auto">
             <li class="nav-item">
-              <router-link class="nav-link" to="/keranjang"
-                >Keranjang
+              <router-link class="nav-link" to="/keranjang">
+                Keranjang
                 <b-icon-bag></b-icon-bag>
-                <span class="badge badge-success ml-2">{{ jumlah_pesanan.length }}</span>
+                <span class="badge badge-success ml-2">{{ jumlah_pesanan }}</span>
               </router-link>
             </li>
           </b-navbar-nav>
@@ -33,27 +33,32 @@
 </template>
 
 <script>
-import axios from "axios";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase"; // Path ke konfigurasi Firebase Anda
 
 export default {
   name: "Navbar",
   data() {
     return {
-      jumlah_pesanan: [],
+      jumlah_pesanan: 0, // Menggunakan total jumlah item
     };
   },
   methods: {
-    setJumlah(data) {
-      this.jumlah_pesanan = data;
+    listenToKeranjang() {
+      // Listen real-time ke koleksi "keranjang" di Firestore
+      const keranjangRef = collection(db, "keranjang");
+      onSnapshot(keranjangRef, (snapshot) => {
+        // Hitung jumlah dokumen dalam koleksi "keranjang"
+        this.jumlah_pesanan = snapshot.size;
+      });
     },
   },
   mounted() {
-    axios.get("http://localhost:3000/keranjang").then((response) => {
-      this.setJumlah(response.data);
-    });
+    this.listenToKeranjang(); // Panggil fungsi untuk listen data Firestore
   },
 };
 </script>
 
 <style>
+/* Tambahkan styling sesuai kebutuhan */
 </style>

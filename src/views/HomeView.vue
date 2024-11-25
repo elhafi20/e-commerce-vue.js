@@ -36,7 +36,9 @@
 import Navbar from "@/components/Navbar.vue";
 import Hero from "@/components/Hero.vue";
 import CardProduct from "@/components/CardProduct.vue";
-import axios from "axios";
+
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/firebase"; // Import konfigurasi Firebase Anda
 
 export default {
   name: "HomeView",
@@ -47,23 +49,29 @@ export default {
   },
   data() {
     return {
-      products: [],
+      products: [], // Daftar produk dari Firestore
     };
   },
   methods: {
-    setProducts(data) {
-      this.products = data;
+    async fetchProducts() {
+      try {
+        const productsRef = collection(db, "best-products"); // Nama koleksi di Firestore
+        const querySnapshot = await getDocs(productsRef);
+        this.products = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+      } catch (error) {
+        console.error("Gagal mengambil data produk: ", error);
+      }
     },
   },
   mounted() {
-    axios
-      .get("http://localhost:3000/best-products")
-      .then((response) => {
-        this.setProducts(response.data);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.fetchProducts(); // Ambil data dari Firestore ketika komponen dimuat
   },
 };
 </script>
+
+<style>
+/* Tambahkan styling sesuai kebutuhan */
+</style>

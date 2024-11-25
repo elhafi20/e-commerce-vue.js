@@ -11,9 +11,8 @@
       <div class="row mt-3">
         <div class="col">
           <div class="input-group mb-3">
-
             <input
-            v-model="search"
+              v-model="search"
               type="text"
               class="form-control"
               placeholder="Cari Makanan Favorit Anda..."
@@ -46,7 +45,8 @@
 <script>
 import Navbar from "@/components/Navbar.vue";
 import CardProduct from "@/components/CardProduct.vue";
-import axios from "axios";
+import { db } from "@/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 export default {
   name: "Foods",
@@ -64,26 +64,43 @@ export default {
     setProducts(data) {
       this.products = data;
     },
-    searchFood() {
-      axios
-      .get("http://localhost:3000/products?q="+this.search)
-      .then((response) => {
-        this.setProducts(response.data);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-    }
+    async searchFood() {
+      if (this.search.trim() === '') {
+        this.fetchProducts(); // Fetch all products if the search is empty
+      } else {
+        try {
+          const productsRef = collection(db, "products");
+          const q = query(
+            productsRef,
+            where("nama", "==", this.search)
+          );
+          const querySnapshot = await getDocs(q);
+          const foundProducts = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          this.setProducts(foundProducts);
+        } catch (error) {
+          console.error("Error searching products: ", error);
+        }
+      }
+    },
+    async fetchProducts() {
+      try {
+        const productsRef = collection(db, "products");
+        const querySnapshot = await getDocs(productsRef);
+        const allProducts = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        this.setProducts(allProducts);
+      } catch (error) {
+        console.error("Error fetching products: ", error);
+      }
+    },
   },
   mounted() {
-    axios
-      .get("http://localhost:3000/products")
-      .then((response) => {
-        this.setProducts(response.data);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.fetchProducts(); // Fetch products on mount
   },
 };
 </script>
