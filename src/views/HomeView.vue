@@ -54,17 +54,19 @@ export default {
   },
   methods: {
     async fetchProducts() {
-      try {
-        const productsRef = collection(db, "best-products"); // Nama koleksi di Firestore
-        const querySnapshot = await getDocs(productsRef);
-        this.products = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-      } catch (error) {
-        console.error("Gagal mengambil data produk: ", error);
-      }
-    },
+  try {
+    const productsRef = collection(db, "best-products"); // Nama koleksi di Firestore
+    const querySnapshot = await getDocs(productsRef);
+    this.products = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    console.log(this.products);  // Debugging, pastikan data sudah benar
+  } catch (error) {
+    console.error("Gagal mengambil data produk: ", error);
+  }
+},
   },
   mounted() {
     this.fetchProducts(); // Ambil data dari Firestore ketika komponen dimuat
