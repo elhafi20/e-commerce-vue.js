@@ -43,13 +43,13 @@
                   <th>{{ index + 1 }}</th>
                   <td>
                     <img
-                      :src="keranjang.products.gambar"
+                      :src="keranjang.product.gambar"
                       class="img-fluid shadow"
                       width="250"
                     />
                   </td>
                   <td>
-                    <strong>{{ keranjang.products.nama }}</strong>
+                    <strong>{{ keranjang.product.nama }}</strong>
                   </td>
                   <td>
                     {{ keranjang.keterangan ? keranjang.keterangan : "-" }}
@@ -57,12 +57,12 @@
                   <td>
                     {{ keranjang.jumlah_pemesanan }}
                   </td>
-                  <td align="right">Rp. {{ keranjang.products.harga }}</td>
+                  <td align="right">Rp. {{ keranjang.product.harga }}</td>
                   <td align="right">
                     <strong>
                       Rp.
                       {{
-                        keranjang.products.harga * keranjang.jumlah_pemesanan
+                        keranjang.product.harga * keranjang.jumlah_pemesanan
                       }}</strong
                     >
                   </td>
@@ -141,6 +141,7 @@ export default {
           id: doc.id,
           ...doc.data(),
         }));
+        // console.log(this.keranjang);
       } catch (error) {
         console.error("Gagal mengambil data keranjang: ", error);
       }
@@ -201,7 +202,7 @@ export default {
   computed: {
     totalHarga() {
       return this.keranjang.reduce((total, item) => {
-        return total + item.products.harga * item.jumlah_pemesanan;
+        return total + item.product.harga * item.jumlah_pemesanan;
       }, 0);
     },
   },
