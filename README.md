@@ -1,10 +1,5 @@
 Demo = https://e-commerce-vue-js.vercel.app
 
-## DEMO
-```
-https://e-commerce-vue-js.vercel.app
-```
-
 # kuliner
 
 ## Project setup
