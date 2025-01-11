@@ -29,15 +29,19 @@
         </div>
       </div>
 
-      <div class="row mb-4">
-        <div
-          class="col-md-4 mt-4"
-          v-for="product in products"
-          :key="product.id"
-        >
-          <CardProduct :product="product" />
-        </div>
+      <div class="row">
+      <div class="col-md-4 mt-4" v-for="product in products" :key="product.id">
+        <CardProduct :product="product">
+          <router-link
+            class="btn btn-success"
+            :to="`/foods/${product.id}`"
+            slot="pesan" 
+          >
+            <b-icon-cart></b-icon-cart> Pesan
+          </router-link>
+        </CardProduct>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -46,7 +50,7 @@
 import Navbar from "@/components/Navbar.vue";
 import CardProduct from "@/components/CardProduct.vue";
 import { db } from "@/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 export default {
   name: "Foods",
@@ -57,29 +61,31 @@ export default {
   data() {
     return {
       products: [],
-      search: '',
+      search: "",
     };
   },
   methods: {
-    setProducts(data) {
-      this.products = data;
-    },
     async searchFood() {
-      if (this.search.trim() === '') {
-        this.fetchProducts(); // Fetch all products if the search is empty
+      const searchQuery = this.search.trim().toLowerCase(); // Normalisasi pencarian
+      if (searchQuery === "") {
+        // Tampilkan semua produk jika pencarian kosong
+        this.fetchProducts();
       } else {
         try {
+          // Ambil semua data produk
           const productsRef = collection(db, "products");
-          const q = query(
-            productsRef,
-            where("nama", "==", this.search)
-          );
-          const querySnapshot = await getDocs(q);
-          const foundProducts = querySnapshot.docs.map(doc => ({
+          const querySnapshot = await getDocs(productsRef);
+          const allProducts = querySnapshot.docs.map((doc) => ({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
           }));
-          this.setProducts(foundProducts);
+
+          // Filter produk berdasarkan substring
+          const filteredProducts = allProducts.filter((product) =>
+            product.nama.toLowerCase().includes(searchQuery)
+          );
+
+          this.setProducts(filteredProducts); // Set produk hasil filter
         } catch (error) {
           console.error("Error searching products: ", error);
         }
@@ -89,14 +95,17 @@ export default {
       try {
         const productsRef = collection(db, "products");
         const querySnapshot = await getDocs(productsRef);
-        const allProducts = querySnapshot.docs.map(doc => ({
+        const allProducts = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         }));
         this.setProducts(allProducts);
       } catch (error) {
         console.error("Error fetching products: ", error);
       }
+    },
+    setProducts(data) {
+      this.products = data;
     },
   },
   mounted() {
@@ -105,5 +114,4 @@ export default {
 };
 </script>
 
-<style>
-</style>
+<style></style>

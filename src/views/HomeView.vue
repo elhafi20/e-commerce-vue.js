@@ -18,15 +18,13 @@
         </div>
       </div>
 
-      <div class="row mb-4">
-        <div
-          class="col-md-4 mt-4"
-          v-for="product in products"
-          :key="product.id"
-        >
-          <CardProduct :product="product" />
-        </div>
+      <div class="row">
+      <div class="col-md-4 mt-4" v-for="product in products" :key="product.id">
+        <CardProduct :product="product">
+
+        </CardProduct>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -62,7 +60,7 @@ export default {
       ...doc.data(),
     }));
 
-    console.log(this.products);  // Debugging, pastikan data sudah benar
+    // console.log(this.products);  // Debugging, pastikan data sudah benar
   } catch (error) {
     console.error("Gagal mengambil data produk: ", error);
   }

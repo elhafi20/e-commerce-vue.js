@@ -160,41 +160,52 @@ export default {
         console.error("Gagal menghapus item: ", error);
       }
     },
-    async checkout() {
-      if (this.pesan.nama && this.pesan.noMeja) {
-        try {
-          // Simpan data pesanan ke Firestore
-          await addDoc(collection(db, "pesanan"), {
-            nama: this.pesan.nama,
-            noMeja: this.pesan.noMeja,
-            keranjang: this.keranjang,
-          });
+async checkout() {
+  if (this.pesan.nama && this.pesan.noMeja) {
+    try {
+      // Generate kode pesanan unik
+      const kodePesanan = `ORD-${Date.now().toString(36).toUpperCase()}`;
 
-          // Hapus semua item di keranjang
-          const deletePromises = this.keranjang.map((item) =>
-            deleteDoc(doc(db, "keranjang", item.id))
-          );
-          await Promise.all(deletePromises);
+      // Simpan data pesanan ke Firestore
+      await addDoc(collection(db, "pesanan"), {
+        nama: this.pesan.nama,
+        noMeja: this.pesan.noMeja,
+        keranjang: this.keranjang,
+        kodePesanan: kodePesanan, // Simpan kode pesanan
+        waktuPesanan: new Date().toISOString(), // Tambahkan waktu pesanan
+      });
 
-          this.$router.push({ path: "/pesanan-sukses" });
-          this.$toast.success("Sukses Dipesan", {
-            type: "success",
-            position: "top-right",
-            duration: 3000,
-            dismissible: true,
-          });
-        } catch (error) {
-          console.error("Terjadi kesalahan saat memproses checkout: ", error);
-        }
-      } else {
-        this.$toast.error("Nama dan Nomor Meja Harus Di Isi", {
-          type: "error",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
-      }
-    },
+      // Hapus semua item di keranjang
+      const deletePromises = this.keranjang.map((item) =>
+        deleteDoc(doc(db, "keranjang", item.id))
+      );
+      await Promise.all(deletePromises);
+
+      // Redirect ke halaman sukses dengan kode pesanan
+      this.$router.push({ 
+        path: "/pesanan-sukses", 
+        query: { kodePesanan: kodePesanan } 
+      });
+
+      this.$toast.success("Sukses Dipesan", {
+        type: "success",
+        position: "top-right",
+        duration: 3000,
+        dismissible: true,
+      });
+    } catch (error) {
+      console.error("Terjadi kesalahan saat memproses checkout: ", error);
+    }
+  } else {
+    this.$toast.error("Nama dan Nomor Meja Harus Di Isi", {
+      type: "error",
+      position: "top-right",
+      duration: 3000,
+      dismissible: true,
+    });
+  }
+}
+
   },
   mounted() {
     this.fetchKeranjang(); // Ambil data keranjang saat komponen dimuat

@@ -91,7 +91,7 @@ export default {
 
     if (productSnap.exists()) {
       this.product = productSnap.data(); // Simpan data produk
-      console.log("Product data:", this.product); // Debugging data
+      // console.log("Product data:", this.product); // Debugging data
     } else {
       console.error("Product not found!");
     }
@@ -138,7 +138,7 @@ export default {
   },
   mounted() {
   const productId = this.$route.params.id;
-  console.log("Product ID from route params:", productId); // Debugging
+  // console.log("Product ID from route params:", productId); // Debugging
   this.setProducts(productId);
 },
 };

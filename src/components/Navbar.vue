@@ -14,6 +14,9 @@
             <li class="nav-item">
               <router-link class="nav-link" to="/foods">Foods</router-link>
             </li>
+            <li class="nav-item">
+              <router-link class="nav-link" to="/search-pesanan">Cari Pesanan</router-link>
+            </li>
           </b-navbar-nav>
 
           <!-- Right aligned nav items -->
@@ -22,10 +25,13 @@
               <router-link class="nav-link" to="/keranjang">
                 Keranjang
                 <b-icon-bag></b-icon-bag>
-                <span class="badge badge-success ml-2">{{ jumlah_pesanan }}</span>
+                <span class="badge badge-success ml-2">{{
+                  jumlah_pesanan
+                }}</span>
               </router-link>
             </li>
           </b-navbar-nav>
+          
         </b-collapse>
       </div>
     </b-navbar>
@@ -35,6 +41,7 @@
 <script>
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase"; // Path ke konfigurasi Firebase Anda
+import { getAuth, signOut } from "firebase/auth";
 
 export default {
   name: "Navbar",
@@ -52,6 +59,22 @@ export default {
         this.jumlah_pesanan = snapshot.size;
       });
     },
+    async logout() {
+      const auth = getAuth();
+      try {
+        await signOut(auth);
+        this.$toast.success("Logout berhasil", {
+          type: "success",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        })
+        this.$router.push("/login");
+      } catch (error) {
+        console.error("Error saat logout:", error);
+        this.$toast.error("Gagal logout. Silakan coba lagi.");
+      }
+    },
   },
   mounted() {
     this.listenToKeranjang(); // Panggil fungsi untuk listen data Firestore
@@ -60,5 +83,7 @@ export default {
 </script>
 
 <style>
-/* Tambahkan styling sesuai kebutuhan */
+.button {
+  border-radius:  20px;
+}
 </style>
