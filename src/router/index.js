@@ -5,7 +5,6 @@ import Foods from '../views/Foods.vue'
 import FoodDetail from '@/views/FoodDetail.vue'
 import Keranjang from '@/views/Keranjang.vue'
 import PesananSukses from '@/views/PesananSukses.vue'
-import BestFoodDetail from '../views/BestFoodDetail.vue'
 import LihatOrder from '../views/LihatOrder.vue'
 import TambahFood from '../views/admin/TambahFood.vue'
 import Register from '../views/Register.vue'
@@ -34,11 +33,6 @@ const routes = [
     path: '/foods/:id',
     name: 'FoodDetail',
     component: FoodDetail
-  },
-  {
-    path: '/bestfoods/:id',
-    name: 'BestFoods',
-    component: BestFoodDetail
   },
   {
     path: '/keranjang',
