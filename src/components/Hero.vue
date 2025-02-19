@@ -7,7 +7,7 @@
           <div class="d-flex h-100">
             <div class="justify-content-center align-self-center">
               <h2>
-                <strong>Delicious Food Menu,</strong> <br />
+                <strong>Delicious Drink Menu,</strong> <br />
                 In Your Gadget
               </h2>
               <p>Ayo Segera Pilih dan Pesan Menu Favorit Anda...</p>

@@ -4,7 +4,7 @@
     <div class="container">
         <div class="row">
             <div class="col text-center">
-                @2024 Copyright Elhafi
+                @2025 Copyright Blink Coffe
             </div>
         </div>
     </div>

@@ -2,7 +2,7 @@
   <div>
     <b-navbar toggleable="lg" type="light">
       <div class="container">
-        <b-navbar-brand href="#">Kuliner</b-navbar-brand>
+        <b-navbar-brand ><strong>Blink Coffe</strong></b-navbar-brand>
 
         <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
@@ -12,7 +12,7 @@
               <router-link class="nav-link" to="/">Home</router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" to="/foods">Foods</router-link>
+              <router-link class="nav-link" to="/foods">Menu</router-link>
             </li>
             <li class="nav-item">
               <router-link class="nav-link" to="/search-pesanan">Cari Pesanan</router-link>

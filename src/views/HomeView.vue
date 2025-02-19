@@ -7,7 +7,7 @@
       <div class="row mt-4">
         <div class="col-12 text-center text-md-start ps-md-0">
           <h2>
-            Best <strong>Foods</strong>
+            Best <strong>Menu</strong>
           </h2>
         </div>
       </div>

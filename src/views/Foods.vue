@@ -1,47 +1,48 @@
 <template>
-  <div>
+  <div class="foods">
     <Navbar />
     <div class="container">
       <div class="row mt-4">
-        <div class="col">
-          <h2>Daftar <strong>Makanan</strong></h2>
+        <div class="col-12 text-center text-md-start">
+          <h2>Daftar <strong>Menu</strong></h2>
         </div>
       </div>
 
-      <div class="row mt-3">
-        <div class="col">
+      <!-- Input Search -->
+      <div class="row justify-content-center mt-3">
+        <div class="col-md-6 col-sm-10">
           <div class="input-group mb-3">
             <input
               v-model="search"
               type="text"
               class="form-control"
-              placeholder="Cari Makanan Favorit Anda..."
+              placeholder="Cari Menu Favorit Anda..."
               aria-label="Cari"
-              aria-describedby="basic-addon1"
-              @keyup="searchFood"
             />
-            <div class="input-group-prepend">
-              <span class="input-group-text" id="basic-addon1">
-                <b-icon-search></b-icon-search>
-              </span>
-            </div>
+            <span class="input-group-text">
+              <b-icon-search></b-icon-search>
+            </span>
           </div>
         </div>
       </div>
 
-      <div class="row">
-      <div class="col-md-4 mt-4" v-for="product in products" :key="product.id">
-        <CardProduct :product="product">
-          <router-link
-            class="btn btn-success"
-            :to="`/foods/${product.id}`"
-            slot="pesan" 
-          >
-            <b-icon-cart></b-icon-cart> Pesan
-          </router-link>
-        </CardProduct>
+      <!-- Daftar Produk -->
+      <div class="row justify-content-center">
+        <div
+          class="col-12 col-sm-6 col-md-4 col-lg-3 mt-4"
+          v-for="product in filteredProducts"
+          :key="product.id"
+        >
+          <CardProduct :product="product" class="responsive-card">
+            <!-- Pastikan slot sesuai dengan yang digunakan di CardProduct -->
+            <template #pesan>
+              <router-link class="btn btn-primary text-start" :to="`/foods/${product.id}`">
+                <b-icon-cart></b-icon-cart> Pesan
+              </router-link>
+            </template>
+          </CardProduct>
+        </div>
       </div>
-    </div>
     </div>
   </div>
 </template>
@@ -64,54 +65,87 @@ export default {
       search: "",
     };
   },
-  methods: {
-    async searchFood() {
-      const searchQuery = this.search.trim().toLowerCase(); // Normalisasi pencarian
-      if (searchQuery === "") {
-        // Tampilkan semua produk jika pencarian kosong
-        this.fetchProducts();
-      } else {
-        try {
-          // Ambil semua data produk
-          const productsRef = collection(db, "products");
-          const querySnapshot = await getDocs(productsRef);
-          const allProducts = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          // Filter produk berdasarkan substring
-          const filteredProducts = allProducts.filter((product) =>
+  computed: {
+    filteredProducts() {
+      const searchQuery = this.search.trim().toLowerCase();
+      return searchQuery
+        ? this.products.filter((product) =>
             product.nama.toLowerCase().includes(searchQuery)
-          );
-
-          this.setProducts(filteredProducts); // Set produk hasil filter
-        } catch (error) {
-          console.error("Error searching products: ", error);
-        }
-      }
+          )
+        : this.products;
     },
+  },
+  methods: {
     async fetchProducts() {
       try {
         const productsRef = collection(db, "products");
         const querySnapshot = await getDocs(productsRef);
-        const allProducts = querySnapshot.docs.map((doc) => ({
+        this.products = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        this.setProducts(allProducts);
       } catch (error) {
         console.error("Error fetching products: ", error);
       }
     },
-    setProducts(data) {
-      this.products = data;
-    },
   },
   mounted() {
-    this.fetchProducts(); // Fetch products on mount
+    this.fetchProducts();
   },
 };
 </script>
 
-<style></style>
+<style scoped>
+/* Responsif Card */
+.responsive-card img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Produk Detail */
+.product-details {
+  padding: 10px;
+}
+
+.product-details h5 {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.product-details p {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+/* Responsif Layout */
+@media (max-width: 576px) {
+  .foods h2 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+  .responsive-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .foods h2 {
+    font-size: 1.8rem;
+    text-align: center;
+  }
+  .responsive-card {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .responsive-card {
+    max-width: 90%;
+    margin: 0 auto;
+  }
+}
+</style>

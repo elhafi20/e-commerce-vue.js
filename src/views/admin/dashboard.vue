@@ -9,7 +9,7 @@
     </div>
 
     <div class="product-list">
-      <h2>Daftar Produk</h2>
+      <h2>Daftar Menu</h2>
       <table>
         <thead>
           <tr>
@@ -376,34 +376,38 @@ confirmDelete(productId) {
 <style scoped>
 /* General Layout */
 .admin-dashboard {
-  font-family: Arial, sans-serif;
-  margin: 20px;
+  font-family: "Poppins", sans-serif;
+  padding: 20px;
+  background: #f9f9f9;
+  min-height: 100vh;
 }
 
 h1 {
   text-align: center;
-  color: #333;
+  color: #2c3e50;
+  font-weight: 600;
 }
 
 .actions {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 15px;
   margin-bottom: 20px;
 }
 
 button,
 .router-link {
-  padding: 10px 20px;
+  padding: 12px 20px;
   font-size: 16px;
   cursor: pointer;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
 
 button:hover,
 .router-link:hover {
-  opacity: 0.8;
+  transform: translateY(-2px);
 }
 
 button.btn-danger {
@@ -412,18 +416,22 @@ button.btn-danger {
 }
 
 button.btn-success {
-  background-color: #2ecc71;
+  background-color: #27ae60;
   color: white;
 }
 
 button.btn-warning {
-  background-color: #f39c12;
-  color: white;
+  background-color: #f1c40f;
+  color: #333;
 }
 
 /* Product List */
 .product-list {
   margin-top: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 table {
@@ -433,47 +441,54 @@ table {
 }
 
 th, td {
-  padding: 10px;
+  padding: 12px;
   text-align: left;
-  border: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
 }
 
 th {
-  background-color: #f4f4f4;
+  background-color: #34495e;
+  color: white;
 }
 
 td img {
-  max-width: 100px;
+  max-width: 80px;
   border-radius: 5px;
+  transition: transform 0.3s;
+}
+
+td img:hover {
+  transform: scale(1.1);
 }
 
 /* Modal Styles */
 .modal {
-  display: block;
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  align-items: center;
+  display: flex;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .modal-content {
-  background-color: white;
+  background: white;
   padding: 20px;
-  border-radius: 10px;
-  width: 80%;
+  border-radius: 12px;
+  width: 90%;
   max-width: 500px;
-  margin: auto;
   position: relative;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-h2 {
+.modal-content h2 {
   text-align: center;
-  color: #333;
+  color: #2c3e50;
 }
 
 .form-group {
@@ -483,31 +498,33 @@ h2 {
 input,
 select {
   width: 100%;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
   font-size: 14px;
 }
 
 button[type="submit"] {
-  background-color: #3498db;
+  background-color: #2980b9;
   color: white;
-  padding: 10px 20px;
+  padding: 12px 20px;
   font-size: 16px;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
+  width: 100%;
+  transition: background 0.3s ease;
 }
 
 button[type="submit"]:hover {
-  background-color: #2980b9;
+  background-color: #1f6695;
 }
 
 button.close {
   position: absolute;
   top: 10px;
   right: 10px;
-  font-size: 20px;
+  font-size: 22px;
   background-color: transparent;
   border: none;
   cursor: pointer;
@@ -518,37 +535,7 @@ button.close:hover {
   color: #333;
 }
 
-/* Confirmation Modal */
-.modal-content p {
-  text-align: center;
-  font-size: 16px;
-  color: #555;
-}
-
-.modal-content button {
-  background-color: #e74c3c;
-  color: white;
-  padding: 10px 20px;
-  font-size: 16px;
-  margin: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.modal-content button:hover {
-  background-color: #c0392b;
-}
-
-.modal-content button:nth-child(2) {
-  background-color: #2ecc71;
-}
-
-.modal-content button:nth-child(2):hover {
-  background-color: #27ae60;
-}
-
-/* Responsiveness */
+/* Responsive Design */
 @media screen and (max-width: 768px) {
   .actions {
     flex-direction: column;
@@ -560,7 +547,7 @@ button.close:hover {
   }
 
   .modal-content {
-    width: 90%;
+    width: 100%;
   }
 }
 </style>
