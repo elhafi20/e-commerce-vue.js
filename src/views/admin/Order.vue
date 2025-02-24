@@ -10,36 +10,26 @@
         <table class="table">
           <thead>
             <tr>
-              <th scope="col">#</th>
-              <th scope="col">Kode Pesanan</th>
-              <th scope="col">Nama Pelanggan</th>
-              <th scope="col">Nomor Meja</th>
-              <th scope="col">Status</th>
-              <th scope="col">Aksi</th>
+              <th>#</th>
+              <th>Kode Pesanan</th>
+              <th>Nama Pelanggan</th>
+              <th>Nomor Meja</th>
+              <th>Status</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(pesanan, index) in pesananList" :key="pesanan.id">
-              <th>{{ index + 1 }}</th>
+              <td>{{ index + 1 }}</td>
               <td>{{ pesanan.kodePesanan }}</td>
               <td>{{ pesanan.nama }}</td>
               <td>{{ pesanan.noMeja }}</td>
               <td>{{ pesanan.status || 'Belum Diproses' }}</td>
               <td>
                 <button class="btn btn-info" @click="lihatPesanan(pesanan)">Lihat Pesanan</button>
-                <button 
-                  v-if="pesanan.status !== 'Selesai'" 
-                  class="btn btn-success"
-                  @click="updateStatus(pesanan.id, 'Selesai')"
-                >
-                  Tandai Selesai
-                </button>
-                <button 
-                  class="btn btn-danger" 
-                  @click="hapusPesanan(pesanan.id)"
-                >
-                  Hapus Pesanan
-                </button>
+                <button v-if="pesanan.status !== 'Selesai'" class="btn btn-success"
+                  @click="updateStatus(pesanan.id, 'Selesai')">Tandai Selesai</button>
+                <button class="btn btn-danger" @click="konfirmasiHapus(pesanan)">Hapus Pesanan</button>
               </td>
             </tr>
           </tbody>
@@ -47,36 +37,41 @@
       </div>
     </div>
 
+    <!-- Modal Konfirmasi Hapus -->
+    <div v-if="showConfirmModal" class="modal-overlay">
+      <div class="modal-container">
+        <h2 class="modal-header">Konfirmasi Hapus</h2>
+        <p>Apakah Anda yakin ingin menghapus pesanan ini?</p>
+        <p><strong>Kode Pesanan:</strong> {{ selectedPesanan?.kodePesanan }}</p>
+
+        <button class="btn btn-danger" @click="hapusPesanan">Ya, Hapus</button>
+        <button class="btn btn-secondary" @click="showConfirmModal = false">Tidak</button>
+      </div>
+    </div>
+
     <!-- Modal Detail Pesanan -->
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-container">
         <h2 class="modal-header">Detail Pesanan</h2>
+        <p><strong>Nama:</strong> {{ selectedPesanan?.nama }}</p>
+        <p><strong>Nomor Meja:</strong> {{ selectedPesanan?.noMeja }}</p>
+        <p><strong>Kode Pesanan:</strong> {{ selectedPesanan?.kodePesanan }}</p>
+        <p><strong>Waktu Pesanan:</strong> {{ new Date(selectedPesanan?.waktuPesanan).toLocaleString() }}</p>
 
-        <div class="modal-body">
-          <p><strong>Nama:</strong> {{ selectedPesanan.nama }}</p>
-          <p><strong>Nomor Meja:</strong> {{ selectedPesanan.noMeja }}</p>
-          <p><strong>Kode Pesanan:</strong> {{ selectedPesanan.kodePesanan }}</p>
-          <p><strong>Waktu Pesanan:</strong> {{ new Date(selectedPesanan.waktuPesanan).toLocaleString() }}</p>
+        <h3 class="modal-subtitle">Detail Keranjang:</h3>
+        <ul class="item-list">
+          <li v-for="item in selectedPesanan?.keranjang" :key="item.id">
+            <span class="item-name">{{ item.product.nama }} x {{ item.jumlah_pemesanan }} - Rp. {{ item.product.harga }}</span>
+          </li>
+        </ul>
 
-          <h3 class="modal-subtitle">Detail Keranjang:</h3>
-          <ul class="item-list">
-            <li v-for="item in selectedPesanan.keranjang" :key="item.id">
-              <span class="item-name">{{ item.product.nama }} x {{ item.jumlah_pemesanan }} Rp. {{ item.product.harga }}</span>
-              <span class="item-keterangan">
-                <strong>Keterangan:</strong> {{ item.keterangan || 'Tidak ada keterangan' }}
-              </span>
-            </li>
-          </ul>
+        <p class="total-harga">Total Harga: <span>Rp. {{ totalHarga }}</span></p>
 
-          <p class="total-harga">Total Harga: <span>Rp. {{ totalHarga }}</span></p>
-
-          <button class="close-btn" @click="showModal = false">Tutup</button>
-        </div>
+        <button class="btn btn-primary" @click="showModal = false">Tutup</button>
       </div>
     </div>
   </div>
 </template>
-
 
 <script>
 import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
@@ -88,7 +83,8 @@ export default {
     return {
       pesananList: [],
       selectedPesanan: null,
-      showModal: false, // Tambahkan state untuk modal
+      showModal: false,
+      showConfirmModal: false, // Tambahkan state untuk modal konfirmasi
     };
   },
   methods: {
@@ -105,8 +101,8 @@ export default {
       }
     },
     lihatPesanan(pesanan) {
-      this.selectedPesanan = pesanan; // Simpan data pesanan yang dipilih
-      this.showModal = true; // Tampilkan modal
+      this.selectedPesanan = pesanan;
+      this.showModal = true;
     },
     async updateStatus(id, status) {
       try {
@@ -117,9 +113,14 @@ export default {
         console.error("Gagal memperbarui status pesanan: ", error);
       }
     },
-    async hapusPesanan(id) {
+    konfirmasiHapus(pesanan) {
+      this.selectedPesanan = pesanan;
+      this.showConfirmModal = true;
+    },
+    async hapusPesanan() {
       try {
-        await deleteDoc(doc(db, "pesanan", id));
+        await deleteDoc(doc(db, "pesanan", this.selectedPesanan.id));
+        this.showConfirmModal = false;
         this.fetchPesanan();
       } catch (error) {
         console.error("Gagal menghapus pesanan: ", error);
@@ -138,13 +139,10 @@ export default {
     this.fetchPesanan();
   },
 };
-
 </script>
 
 <style scoped>
-.admin-dashboard {
-  margin-top: 20px;
-}
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -180,13 +178,6 @@ export default {
   text-align: left;
 }
 
-.modal-subtitle {
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 10px;
-  text-align: left;
-}
-
 .item-list {
   list-style: none;
   padding: 0;
@@ -196,16 +187,6 @@ export default {
 .item-list li {
   padding: 8px 0;
   border-bottom: 1px solid #ddd;
-}
-
-.item-name {
-  font-weight: bold;
-  display: block;
-}
-
-.item-keterangan {
-  font-size: 14px;
-  color: #666;
 }
 
 .total-harga {
@@ -220,33 +201,28 @@ export default {
   color: #28a745;
 }
 
-.close-btn {
-  background: #007bff;
-  color: white;
+.btn {
+  margin: 5px;
   padding: 10px;
-  width: 100%;
-  border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-top: 15px;
 }
 
-.close-btn:hover {
-  background: #0056b3;
+.btn-danger {
+  background: #dc3545;
+  color: white;
+  border: none;
 }
 
-/* Responsiveness */
-@media (max-width: 480px) {
-  .modal-container {
-    width: 95%;
-  }
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+}
 
-  .modal-header {
-    font-size: 20px;
-  }
-
-  .modal-body p {
-    font-size: 14px;
-  }
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border: none;
 }
 </style>
