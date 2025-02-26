@@ -54,7 +54,7 @@
                 placeholder="Keterangan"
               ></textarea>
             </div>
-            <button type="submit" class="btn btn-success" @click="pemesanan">
+            <button type="submit" class="btn btn-oke" @click="pemesanan">
               <b-icon-cart></b-icon-cart>Pesan
             </button>
           </form>
@@ -144,5 +144,8 @@ export default {
 };
 </script>
 
-
 <style>
+.btn-oke:hover {
+  background-color: #873600;
+}
+</style>

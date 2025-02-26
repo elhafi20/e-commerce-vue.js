@@ -104,7 +104,7 @@
 
             <button
               type="submit"
-              class="btn btn-success float-right"
+              class="btn btn-oke float-right"
               @click="checkout"
             >
               <b-icon-cart></b-icon-cart>Pesan
@@ -221,4 +221,7 @@ async checkout() {
 </script>
 
 <style>
+.btn-oke:hover {
+  background-color: #873600;
+}
 </style>
