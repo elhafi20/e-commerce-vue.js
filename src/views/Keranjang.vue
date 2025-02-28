@@ -110,6 +110,31 @@
               <b-icon-cart></b-icon-cart>Pesan
             </button>
           </form>
+          <button
+            class="btn btn-primary mt-2"
+            @click="showQRCode = true"
+          >
+            Bayar Sekarang
+          </button>
+          <div v-if="showQRCode" class="modal-overlay">
+  <div class="modal-container">
+    <h2 class="modal-header">Pembayaran</h2>
+
+    <div class="modal-body">
+      <img src="../assets/images/kakap.jpg" alt="QR Code" class="qr-image" />
+      
+      <div class="form-group mt-2">
+        <label for="upload">Upload Bukti Pembayaran:</label>
+        <input type="file" class="form-control" @change="onFileChange" />
+      </div>
+      
+      <div class="button-group">
+        <button class="btn btn-success" @click="checkoutORD-M7OXWQYP">Bayar</button>
+        <button class="btn btn-secondary" @click="showQRCode = false">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
         </div>
       </div>
     </div>
@@ -118,7 +143,7 @@
 
 <script>
 import Navbar from "@/components/Navbar.vue";
-import { collection, getDocs, deleteDoc, doc, addDoc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, addDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "@/firebase";
 
 export default {
@@ -130,6 +155,8 @@ export default {
     return {
       keranjang: [],
       pesan: {},
+      showQRCode: false,
+      selectedFile: null,
     };
   },
   methods: {
@@ -175,6 +202,9 @@ async checkout() {
         waktuPesanan: new Date().toISOString(), // Tambahkan waktu pesanan
       });
 
+      // Simpan kode pesanan ke data pesan
+      this.pesan.kodePesanan = kodePesanan;
+
       // Hapus semua item di keranjang
       const deletePromises = this.keranjang.map((item) =>
         deleteDoc(doc(db, "keranjang", item.id))
@@ -204,6 +234,73 @@ async checkout() {
       dismissible: true,
     });
   }
+},
+onFileChange(event) {
+  this.selectedFile = event.target.files[0];
+},
+async uploadBuktiPembayaran() {
+  if (this.selectedFile) {
+    const formData = new FormData();
+    formData.append("file", this.selectedFile);
+    formData.append("upload_preset", "FoodItem"); // Sesuaikan dengan Cloudinary
+    formData.append("cloud_name", "dvx6l69vv"); // Sesuaikan dengan akun Cloudinary kamu
+
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/dvx6l69vv/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      const data = await response.json();
+      const buktiPembayaranUrl = data.secure_url;
+
+      // Cari dokumen Firestore berdasarkan kode pesanan
+      const pesananRef = collection(db, "pesanan");
+      const q = query(pesananRef, where("kodePesanan", "==", this.pesan.kodePesanan));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const docId = querySnapshot.docs[0].id; // Dapatkan ID dokumen Firestore
+        const pesananDocRef = doc(db, "pesanan", docId); // Gunakan ID dokumen
+
+        // Update bukti pembayaran di Firestore
+        await updateDoc(pesananDocRef, {
+          buktiPembayaran: buktiPembayaranUrl,
+        });
+
+        this.$toast.success("Bukti pembayaran berhasil diupload", {
+          type: "success",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+      } else {
+        this.$toast.error("Pesanan tidak ditemukan", {
+          type: "error",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      this.$toast.error("Gagal mengupload bukti pembayaran", {
+        type: "error",
+        position: "top-right",
+        duration: 3000,
+        dismissible: true,
+      });
+    }
+  } else {
+    this.$toast.error("Silakan pilih file untuk diupload", {
+      type: "error",
+      position: "top-right",
+      duration: 3000,
+      dismissible: true,
+    });
+  }
 }
 
   },
@@ -223,5 +320,82 @@ async checkout() {
 <style>
 .btn-oke:hover {
   background-color: #873600;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.modal-header {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.modal-body p {
+  font-size: 16px;
+  margin: 5px 0;
+  text-align: left;
+}
+
+.qr-image {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  text-align: left;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.btn {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  flex: 1;
+  margin: 0 5px;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #218838;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
 }
 </style>

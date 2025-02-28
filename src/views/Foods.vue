@@ -36,7 +36,7 @@
           <CardProduct :product="product" class="responsive-card">
             <!-- Pastikan slot sesuai dengan yang digunakan di CardProduct -->
             <template #pesan>
-              <router-link class="btn btn-primary text-start" :to="`/foods/${product.id}`" style="background-color:#a04000; border:none;">
+              <router-link class="btn btn-primary text-start" :to="`/foods/${product.id}`" style="background-color:#a04000; border:none">
                 <b-icon-cart></b-icon-cart> Pesan
               </router-link>
             </template>
