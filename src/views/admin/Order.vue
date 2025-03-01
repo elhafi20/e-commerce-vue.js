@@ -58,6 +58,11 @@
         <p><strong>Kode Pesanan:</strong> {{ selectedPesanan?.kodePesanan }}</p>
         <p><strong>Waktu Pesanan:</strong> {{ new Date(selectedPesanan?.waktuPesanan).toLocaleString() }}</p>
 
+        <p v-if="selectedPesanan?.buktiPembayaran">
+          <strong>Bukti pembayaran:</strong>
+          <img :src="selectedPesanan?.buktiPembayaran" alt="Bukti Pembayaran" class="bukti-pembayaran">
+        </p>
+
         <h3 class="modal-subtitle">Detail Keranjang:</h3>
         <ul class="item-list">
           <li v-for="item in selectedPesanan?.keranjang" :key="item.id">
@@ -224,5 +229,10 @@ export default {
   background: #007bff;
   color: white;
   border: none;
+}
+.bukti-pembayaran{
+  width: 100px;
+  height: 100px;
+  
 }
 </style>

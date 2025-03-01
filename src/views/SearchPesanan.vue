@@ -26,8 +26,10 @@
               <strong>Waktu Pesanan:</strong>
               {{ new Date(selectedPesanan.waktuPesanan).toLocaleString() }}
             </p>
-            <p>
-              <strong>Bukti pembayaran:</strong> {{ selectedPesanan.buktiPembayaran }}
+
+            <p v-if="selectedPesanan.buktiPembayaran">
+              <strong>Bukti pembayaran:</strong> 
+              <img :src="selectedPesanan.buktiPembayaran"  alt="Bukti Pembayaran" class="bukti-pembayaran">
             </p>
 
 
@@ -250,5 +252,13 @@ export default {
 
 .close-btn:hover {
   background: #0056b3;
+}
+img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+ 
+
 }
 </style>

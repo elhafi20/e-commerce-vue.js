@@ -110,31 +110,108 @@
               <b-icon-cart></b-icon-cart>Pesan
             </button>
           </form>
-          <button
-            class="btn btn-primary mt-2"
-            @click="showQRCode = true"
-          >
-            Bayar Sekarang
-          </button>
+          
+          <!-- Payment Options Modal -->
+          <div v-if="showPaymentOptions" class="modal-overlay">
+            <div class="modal-container">
+              <h2 class="modal-header">Pilih Metode Pembayaran</h2>
+              <div class="modal-body">
+                <p><strong>Kode Pesanan:</strong> {{ pesan.kodePesanan }}</p>
+                <p><strong>Total Pembayaran:</strong> Rp. {{ totalHarga }}</p>
+                
+                <div class="payment-options">
+                  <button class="btn btn-primary btn-block mb-3" @click="selectPaymentMethod('direct')">
+                    Bayar Langsung di Kasir
+                  </button>
+                  <button class="btn btn-info btn-block" @click="selectPaymentMethod('transfer')">
+                    Transfer & Upload Bukti Pembayaran
+                  </button>
+                </div>
+                
+                <button class="btn btn-secondary mt-3" @click="showPaymentOptions = false">
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Transfer Payment Modal -->
           <div v-if="showQRCode" class="modal-overlay">
-  <div class="modal-container">
-    <h2 class="modal-header">Pembayaran</h2>
+            <div class="modal-container">
+              <h2 class="modal-header">Pembayaran Transfer</h2>
 
-    <div class="modal-body">
-      <img src="../assets/images/kakap.jpg" alt="QR Code" class="qr-image" />
-      
-      <div class="form-group mt-2">
-        <label for="upload">Upload Bukti Pembayaran:</label>
-        <input type="file" class="form-control" @change="onFileChange" />
-      </div>
-      
-      <div class="button-group">
-        <button class="btn btn-success" @click="checkoutORD-M7OXWQYP">Bayar</button>
-        <button class="btn btn-secondary" @click="showQRCode = false">Tutup</button>
-      </div>
-    </div>
-  </div>
-</div>
+              <div class="modal-body">
+                <img
+                  src="../assets/images/kakap.jpg"
+                  alt="QR Code"
+                  class="qr-image"
+                />
+                
+                <div class="payment-details mt-3">
+                  <p><strong>Kode Pesanan:</strong> {{ pesan.kodePesanan }}</p>
+                  <p><strong>Total Pembayaran:</strong> Rp. {{ totalHarga }}</p>
+                  <p class="text-muted">Silakan transfer ke rekening yang tertera pada QR code di atas</p>
+                </div>
+
+                <div class="form-group mt-2">
+                  <label for="upload">Upload Bukti Pembayaran:</label>
+                  <input
+                    type="file"
+                    class="form-control"
+                    @change="onFileChange"
+                    accept="image/*"
+                  />
+                </div>
+
+                <div v-if="uploadingImage" class="text-center my-3">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                  </div>
+                  <p>Sedang mengupload...</p>
+                </div>
+
+                <div class="button-group mt-3">
+                  <button
+                    class="btn btn-success"
+                    @click="uploadBuktiPembayaran"
+                    :disabled="!selectedFile || uploadingImage"
+                  >
+                    Konfirmasi Pembayaran
+                  </button>
+
+                  <button class="btn btn-secondary" @click="showQRCode = false">
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Direct Payment Success Modal -->
+          <div v-if="showDirectPayment" class="modal-overlay">
+            <div class="modal-container">
+              <h2 class="modal-header">Pembayaran di Kasir</h2>
+              <div class="modal-body text-center">
+                <div class="alert alert-success">
+                  <p><strong>Pesanan Berhasil Dibuat!</strong></p>
+                  <p>Silakan tunjukkan kode pesanan kepada kasir untuk melakukan pembayaran.</p>
+                </div>
+                
+                <div class="payment-details mt-3">
+                  <h4>Kode Pesanan: <strong>{{ pesan.kodePesanan }}</strong></h4>
+                  <p>Total Pembayaran: <strong>Rp. {{ totalHarga }}</strong></p>
+                </div>
+                
+                <button class="btn btn-primary mt-3" @click="completeDirectPayment">
+                  Saya Sudah Membayar
+                </button>
+                
+                <button class="btn btn-secondary mt-2" @click="showDirectPayment = false">
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -143,7 +220,17 @@
 
 <script>
 import Navbar from "@/components/Navbar.vue";
-import { collection, getDocs, deleteDoc, doc, addDoc, updateDoc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  addDoc,
+  updateDoc,
+  // query,
+  // where,
+  getDoc,
+} from "firebase/firestore";
 import { db } from "@/firebase";
 
 export default {
@@ -154,9 +241,17 @@ export default {
   data() {
     return {
       keranjang: [],
-      pesan: {},
+      pesan: {
+        nama: "",
+        noMeja: "",
+        kodePesanan: ""
+      },
+      showPaymentOptions: false,
       showQRCode: false,
+      showDirectPayment: false,
       selectedFile: null,
+      activePesananId: null, // Store the Firestore document ID
+      uploadingImage: false,
     };
   },
   methods: {
@@ -168,7 +263,6 @@ export default {
           id: doc.id,
           ...doc.data(),
         }));
-        // console.log(this.keranjang);
       } catch (error) {
         console.error("Gagal mengambil data keranjang: ", error);
       }
@@ -187,122 +281,232 @@ export default {
         console.error("Gagal menghapus item: ", error);
       }
     },
-async checkout() {
-  if (this.pesan.nama && this.pesan.noMeja) {
-    try {
-      // Generate kode pesanan unik
-      const kodePesanan = `ORD-${Date.now().toString(36).toUpperCase()}`;
+    async checkout() {
+      if (this.pesan.nama && this.pesan.noMeja && this.keranjang.length > 0) {
+        try {
+          // Generate kode pesanan unik
+          const kodePesanan = `ORD-${Date.now().toString(36).toUpperCase()}`;
 
-      // Simpan data pesanan ke Firestore
-      await addDoc(collection(db, "pesanan"), {
-        nama: this.pesan.nama,
-        noMeja: this.pesan.noMeja,
-        keranjang: this.keranjang,
-        kodePesanan: kodePesanan, // Simpan kode pesanan
-        waktuPesanan: new Date().toISOString(), // Tambahkan waktu pesanan
-      });
+          // Simpan data pesanan ke Firestore
+          const docRef = await addDoc(collection(db, "pesanan"), {
+            nama: this.pesan.nama,
+            noMeja: this.pesan.noMeja,
+            keranjang: this.keranjang,
+            kodePesanan: kodePesanan,
+            waktuPesanan: new Date().toISOString(),
+            status: "pending", // Status pesanan: pending, paid, completed
+            metodePembayaran: null // Akan diisi nanti
+          });
 
-      // Simpan kode pesanan ke data pesan
-      this.pesan.kodePesanan = kodePesanan;
+          // Simpan kode pesanan dan document ID
+          this.pesan.kodePesanan = kodePesanan;
+          this.activePesananId = docRef.id;
 
-      // Hapus semua item di keranjang
-      const deletePromises = this.keranjang.map((item) =>
-        deleteDoc(doc(db, "keranjang", item.id))
-      );
-      await Promise.all(deletePromises);
-
-      // Redirect ke halaman sukses dengan kode pesanan
-      this.$router.push({ 
-        path: "/pesanan-sukses", 
-        query: { kodePesanan: kodePesanan } 
-      });
-
-      this.$toast.success("Sukses Dipesan", {
-        type: "success",
-        position: "top-right",
-        duration: 3000,
-        dismissible: true,
-      });
-    } catch (error) {
-      console.error("Terjadi kesalahan saat memproses checkout: ", error);
-    }
-  } else {
-    this.$toast.error("Nama dan Nomor Meja Harus Di Isi", {
-      type: "error",
-      position: "top-right",
-      duration: 3000,
-      dismissible: true,
-    });
-  }
-},
-onFileChange(event) {
-  this.selectedFile = event.target.files[0];
-},
-async uploadBuktiPembayaran() {
-  if (this.selectedFile) {
-    const formData = new FormData();
-    formData.append("file", this.selectedFile);
-    formData.append("upload_preset", "FoodItem"); // Sesuaikan dengan Cloudinary
-    formData.append("cloud_name", "dvx6l69vv"); // Sesuaikan dengan akun Cloudinary kamu
-
-    try {
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/dvx6l69vv/image/upload`,
-        {
-          method: "POST",
-          body: formData,
+          this.$toast.success("Pesanan berhasil dibuat", {
+            type: "success",
+            position: "top-right",
+            duration: 3000,
+            dismissible: true,
+          });
+          
+          // Tampilkan opsi pembayaran
+          this.showPaymentOptions = true;
+          
+        } catch (error) {
+          console.error("Terjadi kesalahan saat memproses checkout: ", error);
+          this.$toast.error("Gagal membuat pesanan", {
+            type: "error",
+            position: "top-right",
+            duration: 3000,
+            dismissible: true,
+          });
         }
-      );
-      const data = await response.json();
-      const buktiPembayaranUrl = data.secure_url;
-
-      // Cari dokumen Firestore berdasarkan kode pesanan
-      const pesananRef = collection(db, "pesanan");
-      const q = query(pesananRef, where("kodePesanan", "==", this.pesan.kodePesanan));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const docId = querySnapshot.docs[0].id; // Dapatkan ID dokumen Firestore
-        const pesananDocRef = doc(db, "pesanan", docId); // Gunakan ID dokumen
-
-        // Update bukti pembayaran di Firestore
-        await updateDoc(pesananDocRef, {
-          buktiPembayaran: buktiPembayaranUrl,
-        });
-
-        this.$toast.success("Bukti pembayaran berhasil diupload", {
-          type: "success",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
       } else {
-        this.$toast.error("Pesanan tidak ditemukan", {
+        let message = "Terjadi kesalahan:";
+        if (!this.pesan.nama) message += " Nama harus diisi.";
+        if (!this.pesan.noMeja) message += " Nomor meja harus diisi.";
+        if (this.keranjang.length === 0) message += " Keranjang kosong.";
+        
+        this.$toast.error(message, {
           type: "error",
           position: "top-right",
           duration: 3000,
           dismissible: true,
         });
       }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      this.$toast.error("Gagal mengupload bukti pembayaran", {
-        type: "error",
-        position: "top-right",
-        duration: 3000,
-        dismissible: true,
-      });
-    }
-  } else {
-    this.$toast.error("Silakan pilih file untuk diupload", {
-      type: "error",
-      position: "top-right",
-      duration: 3000,
-      dismissible: true,
-    });
-  }
-}
+    },
+    selectPaymentMethod(method) {
+      if (!this.activePesananId) {
+        this.$toast.error("Pesanan tidak ditemukan", {
+          type: "error",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+        return;
+      }
+      
+      // Update metode pembayaran di Firestore
+      const updatePaymentMethod = async () => {
+        try {
+          const pesananDocRef = doc(db, "pesanan", this.activePesananId);
+          await updateDoc(pesananDocRef, {
+            metodePembayaran: method
+          });
+        } catch (error) {
+          console.error("Gagal mengupdate metode pembayaran:", error);
+        }
+      };
+      
+      // Tutup modal opsi pembayaran
+      this.showPaymentOptions = false;
+      
+      if (method === 'direct') {
+        // Tampilkan modal pembayaran langsung
+        updatePaymentMethod();
+        this.showDirectPayment = true;
+      } else if (method === 'transfer') {
+        // Tampilkan modal QR code dan upload bukti
+        updatePaymentMethod();
+        this.showQRCode = true;
+      }
+    },
+    onFileChange(event) {
+      this.selectedFile = event.target.files[0];
+    },
+    async uploadBuktiPembayaran() {
+      if (!this.selectedFile) {
+        this.$toast.error("Silakan pilih file untuk diupload", {
+          type: "error",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+        return;
+      }
+      
+      if (!this.activePesananId) {
+        this.$toast.error("ID pesanan tidak ditemukan", {
+          type: "error",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+        return;
+      }
+      
+      this.uploadingImage = true;
+      
+      try {
+        const formData = new FormData();
+        formData.append("file", this.selectedFile);
+        formData.append("upload_preset", "FoodItem"); // Sesuaikan dengan Cloudinary
+        formData.append("cloud_name", "dvx6l69vv"); // Sesuaikan dengan akun Cloudinary kamu
 
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/dvx6l69vv/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Gagal mengupload gambar");
+        }
+
+        const data = await response.json();
+        const buktiPembayaranUrl = data.secure_url;
+
+        // Update pesanan dengan bukti pembayaran
+        const pesananDocRef = doc(db, "pesanan", this.activePesananId);
+        
+        // Pastikan dokumen ada
+        const docSnap = await getDoc(pesananDocRef);
+        if (!docSnap.exists()) {
+          throw new Error("Pesanan tidak ditemukan");
+        }
+        
+        // Update dokumen dengan bukti pembayaran dan status
+        await updateDoc(pesananDocRef, {
+          buktiPembayaran: buktiPembayaranUrl,
+          status: "Dalam proses",
+          waktuPembayaran: new Date().toISOString()
+        });
+
+        // Hapus item dari keranjang setelah pembayaran berhasil
+        const deletePromises = this.keranjang.map((item) =>
+          deleteDoc(doc(db, "keranjang", item.id))
+        );
+        await Promise.all(deletePromises);
+        
+        this.$toast.success("Pembayaran berhasil", {
+          type: "success",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+        
+        // Tutup modal dan redirect ke halaman sukses
+        this.showQRCode = false;
+        this.$router.push({
+          path: "/pesanan-sukses",
+          query: { kodePesanan: this.pesan.kodePesanan },
+        });
+        
+      } catch (error) {
+        console.error("Error uploading payment proof:", error);
+        this.$toast.error(`Gagal mengupload bukti pembayaran: ${error.message}`, {
+          type: "error",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+      } finally {
+        this.uploadingImage = false;
+      }
+    },
+    async completeDirectPayment() {
+      try {
+        // Update pesanan status
+        const pesananDocRef = doc(db, "pesanan", this.activePesananId);
+        
+        await updateDoc(pesananDocRef, {
+          status: "Dalam proses",
+          waktuPembayaran: new Date().toISOString(),
+          pembayaranLangsung: true
+        });
+
+        // Hapus item dari keranjang
+        const deletePromises = this.keranjang.map((item) =>
+          deleteDoc(doc(db, "keranjang", item.id))
+        );
+        await Promise.all(deletePromises);
+        
+        this.$toast.success("Pembayaran berhasil dicatat", {
+          type: "success",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+        
+        // Tutup modal dan redirect ke halaman sukses
+        this.showDirectPayment = false;
+        this.$router.push({
+          path: "/pesanan-sukses",
+          query: { kodePesanan: this.pesan.kodePesanan },
+        });
+        
+      } catch (error) {
+        console.error("Error completing direct payment:", error);
+        this.$toast.error(`Gagal mencatat pembayaran: ${error.message}`, {
+          type: "error",
+          position: "top-right",
+          duration: 3000,
+          dismissible: true,
+        });
+      }
+    }
   },
   mounted() {
     this.fetchKeranjang(); // Ambil data keranjang saat komponen dimuat
@@ -317,17 +521,14 @@ async uploadBuktiPembayaran() {
 };
 </script>
 
-<style>
-.btn-oke:hover {
-  background-color: #873600;
-}
+<style scoped>
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -335,67 +536,57 @@ async uploadBuktiPembayaran() {
 }
 
 .modal-container {
-  background: white;
-  border-radius: 10px;
+  background-color: white;
   padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
   width: 90%;
-  max-width: 450px;
-  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
-  text-align: center;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-header {
-  font-size: 24px;
-  font-weight: bold;
   margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
 }
 
-.modal-body p {
-  font-size: 16px;
-  margin: 5px 0;
-  text-align: left;
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .qr-image {
-  max-width: 100%;
-  height: auto;
+  max-width: 250px;
   margin-bottom: 15px;
-}
-
-.form-group {
-  text-align: left;
 }
 
 .button-group {
   display: flex;
   justify-content: space-between;
+  width: 100%;
   margin-top: 15px;
 }
 
-.btn {
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  flex: 1;
-  margin: 0 5px;
+.payment-options {
+  width: 100%;
+  margin: 15px 0;
 }
 
-.btn-success {
-  background: #28a745;
+.payment-details {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.btn-oke {
+  background-color: #4CAF50;
   color: white;
 }
 
-.btn-success:hover {
-  background: #218838;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #5a6268;
+.btn-block {
+  display: block;
+  width: 100%;
 }
 </style>
