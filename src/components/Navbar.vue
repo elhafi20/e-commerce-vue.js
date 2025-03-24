@@ -2,7 +2,7 @@
   <div>
     <b-navbar toggleable="lg" type="light">
       <div class="container">
-        <b-navbar-brand ><strong>Blink Coffe</strong></b-navbar-brand>
+        <b-navbar-brand tag="router-link" to="/"><strong>Blink Coffee</strong></b-navbar-brand>
 
         <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
@@ -25,13 +25,23 @@
               <router-link class="nav-link" to="/keranjang">
                 Keranjang
                 <b-icon-bag></b-icon-bag>
-                <span class="badge badge-success ml-2">{{
-                  jumlah_pesanan
-                }}</span>
+                <span class="badge badge-success ml-2">{{ jumlah_pesanan }}</span>
               </router-link>
             </li>
+
+            <!-- Login hanya untuk Admin -->
+            <li class="nav-item" v-if="isAdmin === null">
+              <span class="nav-link text-muted">Memeriksa...</span>
+            </li>
+            <li class="nav-item" v-if="isAdmin === false">
+              <router-link class="nav-link" style="border: none;" to="/login">
+                <b-icon-person></b-icon-person>
+              </router-link>
+            </li>
+            <li class="nav-item" v-if="isAdmin === true">
+              <button class="nav-link btn btn-outline-danger" @click="logout">Logout</button>
+            </li>
           </b-navbar-nav>
-          
         </b-collapse>
       </div>
     </b-navbar>
@@ -39,51 +49,61 @@
 </template>
 
 <script>
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { db } from "../firebase"; // Path ke konfigurasi Firebase Anda
-import { getAuth, signOut } from "firebase/auth";
 
 export default {
   name: "Navbar",
   data() {
     return {
-      jumlah_pesanan: 0, // Menggunakan total jumlah item
+      jumlah_pesanan: 0,
+      isAdmin: null, // Null saat memeriksa status login
     };
   },
   methods: {
     listenToKeranjang() {
-      // Listen real-time ke koleksi "keranjang" di Firestore
       const keranjangRef = collection(db, "keranjang");
       onSnapshot(keranjangRef, (snapshot) => {
-        // Hitung jumlah dokumen dalam koleksi "keranjang"
         this.jumlah_pesanan = snapshot.size;
       });
     },
+    async checkAdmin(user) {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && userSnap.data().role === "admin") {
+          this.isAdmin = true;
+        } else {
+          this.isAdmin = false;
+          await signOut(getAuth()); // Logout otomatis jika bukan admin
+        }
+      } else {
+        this.isAdmin = false;
+      }
+    },
     async logout() {
-      const auth = getAuth();
       try {
-        await signOut(auth);
-        this.$toast.success("Logout berhasil", {
-          type: "success",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        })
+        await signOut(getAuth());
+        this.$toast.success("Logout berhasil", { position: "top-right" });
         this.$router.push("/login");
       } catch (error) {
-        console.error("Error saat logout:", error);
-        this.$toast.error("Gagal logout. Silakan coba lagi.");
+        this.$toast.error("Gagal logout. Silakan coba lagi.", { position: "top-right" });
       }
     },
   },
   mounted() {
-    this.listenToKeranjang(); // Panggil fungsi untuk listen data Firestore
+    this.listenToKeranjang();
+    const auth = getAuth();
+    onAuthStateChanged(auth, (user) => {
+      this.checkAdmin(user);
+    });
   },
 };
 </script>
 
 <style>
 .button {
-  border-radius:  20px;
+  border-radius: 20px;
 }
 </style>
