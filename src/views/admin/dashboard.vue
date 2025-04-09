@@ -1,4 +1,6 @@
 <template>
+  <div class="dashboard">
+    <Navbar />
   <div class="admin-dashboard">
     <h1>Dashboard Admin</h1>
 
@@ -144,9 +146,11 @@
       </div>
     </div>
   </div>
+  </div>
 </template>
 
 <script>
+import Navbar from "@/components/Navbar.vue";
 import { getAuth, signOut } from "firebase/auth";
 import {
   getFirestore,
@@ -159,6 +163,10 @@ import {
 } from "firebase/firestore";
 
 export default {
+  name: "Dashboard",
+  components: {
+    Navbar,
+  },
   data() {
     return {
       products: [],

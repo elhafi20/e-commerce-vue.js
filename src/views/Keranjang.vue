@@ -120,12 +120,10 @@
                 <p><strong>Total Pembayaran:</strong> Rp. {{ totalHarga }}</p>
                 
                 <div class="payment-options">
-                  <button class="btn btn-primary btn-block mb-3" @click="selectPaymentMethod('direct')">
-                    Bayar Langsung di Kasir
-                  </button>
                   <button class="btn btn-info btn-block" @click="selectPaymentMethod('transfer')">
                     Transfer & Upload Bukti Pembayaran
                   </button>
+                  <small class="text-muted">* Hanya gambar (maksimal 500 KB)</small>
                 </div>
                 
                 <button class="btn btn-secondary mt-3" @click="showPaymentOptions = false">
@@ -142,7 +140,7 @@
 
               <div class="modal-body">
                 <img
-                  src="../assets/images/kakap.jpg"
+                  src="../assets/images/qris.jpg"
                   alt="QR Code"
                   class="qr-image"
                 />
@@ -183,32 +181,6 @@
                     Tutup
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Direct Payment Success Modal -->
-          <div v-if="showDirectPayment" class="modal-overlay">
-            <div class="modal-container">
-              <h2 class="modal-header">Pembayaran di Kasir</h2>
-              <div class="modal-body text-center">
-                <div class="alert alert-success">
-                  <p><strong>Pesanan Berhasil Dibuat!</strong></p>
-                  <p>Silakan tunjukkan kode pesanan kepada kasir untuk melakukan pembayaran.</p>
-                </div>
-                
-                <div class="payment-details mt-3">
-                  <h4>Kode Pesanan: <strong>{{ pesan.kodePesanan }}</strong></h4>
-                  <p>Total Pembayaran: <strong>Rp. {{ totalHarga }}</strong></p>
-                </div>
-                
-                <button class="btn btn-primary mt-3" @click="completeDirectPayment">
-                  Saya Sudah Membayar
-                </button>
-                
-                <button class="btn btn-secondary mt-2" @click="showDirectPayment = false">
-                  Tutup
-                </button>
               </div>
             </div>
           </div>
@@ -468,35 +440,30 @@ export default {
     },
     async completeDirectPayment() {
       try {
-        // Update pesanan status
         const pesananDocRef = doc(db, "pesanan", this.activePesananId);
-        
         await updateDoc(pesananDocRef, {
-          status: "Dalam proses",
+          status: "paid",
           waktuPembayaran: new Date().toISOString(),
           pembayaranLangsung: true
         });
 
-        // Hapus item dari keranjang
         const deletePromises = this.keranjang.map((item) =>
           deleteDoc(doc(db, "keranjang", item.id))
         );
         await Promise.all(deletePromises);
-        
+
         this.$toast.success("Pembayaran berhasil dicatat", {
           type: "success",
           position: "top-right",
           duration: 3000,
           dismissible: true,
         });
-        
-        // Tutup modal dan redirect ke halaman sukses
+
         this.showDirectPayment = false;
         this.$router.push({
           path: "/pesanan-sukses",
           query: { kodePesanan: this.pesan.kodePesanan },
         });
-        
       } catch (error) {
         console.error("Error completing direct payment:", error);
         this.$toast.error(`Gagal mencatat pembayaran: ${error.message}`, {
@@ -506,7 +473,29 @@ export default {
           dismissible: true,
         });
       }
-    }
+    },
+    async updateStatusToDalamProses(pesananId) {
+      try {
+        const pesananDocRef = doc(db, "pesanan", pesananId);
+        await updateDoc(pesananDocRef, {
+          status: "Dalam proses",
+        });
+        this.$toast.success("Status pesanan diperbarui ke 'Dalam proses'");
+      } catch (error) {
+        console.error("Gagal memperbarui status:", error);
+      }
+    },
+    async updateStatusToCompleted(pesananId) {
+      try {
+        const pesananDocRef = doc(db, "pesanan", pesananId);
+        await updateDoc(pesananDocRef, {
+          status: "completed",
+        });
+        this.$toast.success("Status pesanan diperbarui ke 'completed'");
+      } catch (error) {
+        console.error("Gagal memperbarui status:", error);
+      }
+    },
   },
   mounted() {
     this.fetchKeranjang(); // Ambil data keranjang saat komponen dimuat

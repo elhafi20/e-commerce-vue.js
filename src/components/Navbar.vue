@@ -39,7 +39,7 @@
               </router-link>
             </li>
             <li class="nav-item" v-if="isAdmin === true">
-              <button class="nav-link btn btn-outline-danger" @click="logout">Logout</button>
+              <button class="nav-link btn btn-outline-danger" @click="logout">logout</button>
             </li>
           </b-navbar-nav>
         </b-collapse>

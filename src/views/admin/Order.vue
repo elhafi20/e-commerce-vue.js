@@ -3,7 +3,9 @@
     <div class="container">
       <div>
         <h2 class="mt-4">Dashboard Admin - Pesanan</h2>
-        <router-link class="btn btn-success" :to="`/dashboard`">Back</router-link>
+        <router-link class="btn btn-success" :to="`/dashboard`"
+          >Back</router-link
+        >
       </div>
 
       <div class="table-responsive mt-3">
@@ -24,12 +26,24 @@
               <td>{{ pesanan.kodePesanan }}</td>
               <td>{{ pesanan.nama }}</td>
               <td>{{ pesanan.noMeja }}</td>
-              <td>{{ pesanan.status || 'Belum Diproses' }}</td>
+              <td>{{ pesanan.status || "Belum Diproses" }}</td>
               <td>
-                <button class="btn btn-info" @click="lihatPesanan(pesanan)">Lihat Pesanan</button>
-                <button v-if="pesanan.status !== 'Selesai'" class="btn btn-success"
-                  @click="updateStatus(pesanan.id, 'Selesai')">Tandai Selesai</button>
-                <button class="btn btn-danger" @click="konfirmasiHapus(pesanan)">Hapus Pesanan</button>
+                <button class="btn btn-info" @click="lihatPesanan(pesanan)">
+                  Lihat Pesanan
+                </button>
+                <button
+                  v-if="pesanan.status !== 'Selesai'"
+                  class="btn btn-success"
+                  @click="updateStatus(pesanan.id, 'Selesai')"
+                >
+                  Tandai Selesai
+                </button>
+                <button
+                  class="btn btn-danger"
+                  @click="konfirmasiHapus(pesanan)"
+                >
+                  Hapus Pesanan
+                </button>
               </td>
             </tr>
           </tbody>
@@ -45,7 +59,9 @@
         <p><strong>Kode Pesanan:</strong> {{ selectedPesanan?.kodePesanan }}</p>
 
         <button class="btn btn-danger" @click="hapusPesanan">Ya, Hapus</button>
-        <button class="btn btn-secondary" @click="showConfirmModal = false">Tidak</button>
+        <button class="btn btn-secondary" @click="showConfirmModal = false">
+          Tidak
+        </button>
       </div>
     </div>
 
@@ -53,33 +69,69 @@
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-container">
         <h2 class="modal-header">Detail Pesanan</h2>
-        <p><strong>Nama:</strong> {{ selectedPesanan?.nama }}</p>
-        <p><strong>Nomor Meja:</strong> {{ selectedPesanan?.noMeja }}</p>
-        <p><strong>Kode Pesanan:</strong> {{ selectedPesanan?.kodePesanan }}</p>
-        <p><strong>Waktu Pesanan:</strong> {{ new Date(selectedPesanan?.waktuPesanan).toLocaleString() }}</p>
 
-        <p v-if="selectedPesanan?.buktiPembayaran">
-          <strong>Bukti pembayaran:</strong>
-          <img :src="selectedPesanan?.buktiPembayaran" alt="Bukti Pembayaran" class="bukti-pembayaran">
+        <div class="text-left">
+          <p><strong>Nama:</strong> {{ selectedPesanan?.nama }}</p>
+          <p><strong>No Meja:</strong> {{ selectedPesanan?.noMeja }}</p>
+          <p><strong>Kode:</strong> {{ selectedPesanan?.kodePesanan }}</p>
+          <p>
+            <strong>Waktu:</strong>
+            {{ new Date(selectedPesanan?.waktuPesanan).toLocaleString() }}
+          </p>
+        </div>
+
+        <!-- Keep the thumbnail as is -->
+        <p v-if="selectedPesanan.buktiPembayaran">
+          <strong>Bukti pembayaran:</strong><br />
+          <img
+            :src="selectedPesanan.buktiPembayaran"
+            alt="Bukti Pembayaran"
+            class="bukti-pembayaran"
+            @click="previewImage(selectedPesanan.buktiPembayaran)"
+            style="
+              cursor: pointer;
+              max-width: 150px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+            "
+          />
         </p>
+        <!-- Updated modal -->
+        <div v-if="showImageModal" class="image-modal" @click="closeModal">
+          <div class="image-modal-content" @click.stop>
+            <button class="close-button" @click="closeModal">&times;</button>
+            <img :src="previewImageUrl" alt="Preview" class="modal-image" />
+          </div>
+        </div>
 
-        <h3 class="modal-subtitle">Detail Keranjang:</h3>
+        <h3 class="modal-subtitle mt-3">Keranjang:</h3>
         <ul class="item-list">
           <li v-for="item in selectedPesanan?.keranjang" :key="item.id">
-            <span class="item-name">{{ item.product.nama }} x {{ item.jumlah_pemesanan }} - Rp. {{ item.product.harga }}</span>
+            {{ item.product.nama }} x {{ item.jumlah_pemesanan }} - Rp.
+            {{ item.product.harga }}
           </li>
         </ul>
 
-        <p class="total-harga">Total Harga: <span>Rp. {{ totalHarga }}</span></p>
+        <p class="total-harga">
+          Total Harga: <span>Rp. {{ totalHarga }}</span>
+        </p>
 
-        <button class="btn btn-primary" @click="showModal = false">Tutup</button>
+        <button class="btn btn-primary mt-2" @click="showModal = false">
+          Tutup
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
 import { db } from "@/firebase";
 
 export default {
@@ -89,7 +141,9 @@ export default {
       pesananList: [],
       selectedPesanan: null,
       showModal: false,
-      showConfirmModal: false, // Tambahkan state untuk modal konfirmasi
+      showConfirmModal: false,
+      previewImageUrl: null,
+      showImageModal: false,
     };
   },
   methods: {
@@ -131,13 +185,25 @@ export default {
         console.error("Gagal menghapus pesanan: ", error);
       }
     },
+
+    closeModal() {
+      this.showImageModal = false;
+      document.body.style.overflow = "";
+    },
+    previewImage(url) {
+      this.previewImageUrl = url;
+      this.showImageModal = true;
+      document.body.style.overflow = "hidden";
+    },
   },
   computed: {
     totalHarga() {
-      return this.selectedPesanan?.keranjang.reduce(
-        (acc, item) => acc + item.jumlah_pemesanan * item.product.harga,
-        0
-      ) || 0;
+      return (
+        this.selectedPesanan?.keranjang.reduce(
+          (acc, item) => acc + item.jumlah_pemesanan * item.product.harga,
+          0
+        ) || 0
+      );
     },
   },
   mounted() {
@@ -181,6 +247,74 @@ export default {
   font-size: 16px;
   margin: 5px 0;
   text-align: left;
+}
+.modal-subtitle {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.image-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+  position: fixed;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-image {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 90vh;
+  margin: 0 auto;
+  display: block;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.close-btn {
+  background: #007bff;
+  color: white;
+  padding: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.close-btn:hover {
+  background: #0056b3;
 }
 
 .item-list {
@@ -230,9 +364,8 @@ export default {
   color: white;
   border: none;
 }
-.bukti-pembayaran{
+.bukti-pembayaran {
   width: 100px;
   height: 100px;
-  
 }
 </style>
