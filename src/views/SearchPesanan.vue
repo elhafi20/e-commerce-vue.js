@@ -32,17 +32,7 @@
               {{ new Date(selectedPesanan.waktuPesanan).toLocaleString() }}
             </p>
 
-           <!-- Replace the current image and modal implementation with this -->
-              <p v-if="selectedPesanan.buktiPembayaran">
-                <strong>Bukti pembayaran:</strong><br />
-                <img
-                  :src="selectedPesanan.buktiPembayaran"
-                  alt="Bukti Pembayaran"
-                  class="bukti-pembayaran"
-                  @click="previewImage(selectedPesanan.buktiPembayaran)"
-                  style="cursor: pointer; max-width: 150px; border: 1px solid #ddd; border-radius: 4px;"
-                />
-              </p>
+           
               <!-- Updated modal -->
               <div v-if="showImageModal" class="image-modal" @click="closeModal">
                 <div class="image-modal-content" @click.stop>
@@ -58,6 +48,7 @@
                   >{{ item.product.nama }} x {{ item.jumlah_pemesanan }} Rp.
                   {{ item.product.harga }}</span
                 >
+                <img src="pesanan.product.gambar" alt="">
                 <span class="item-keterangan">
                   <strong>Keterangan:</strong>
                   {{ item.keterangan || "Tidak ada keterangan" }}

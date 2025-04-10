@@ -110,85 +110,16 @@
               <b-icon-cart></b-icon-cart>Pesan
             </button>
           </form>
-          
-          <!-- Payment Options Modal -->
-          <div v-if="showPaymentOptions" class="modal-overlay">
-            <div class="modal-container">
-              <h2 class="modal-header">Pilih Metode Pembayaran</h2>
-              <div class="modal-body">
-                <p><strong>Kode Pesanan:</strong> {{ pesan.kodePesanan }}</p>
-                <p><strong>Total Pembayaran:</strong> Rp. {{ totalHarga }}</p>
-                
-                <div class="payment-options">
-                  <button class="btn btn-info btn-block" @click="selectPaymentMethod('transfer')">
-                    Transfer & Upload Bukti Pembayaran
-                  </button>
-                  <small class="text-muted">* Hanya gambar (maksimal 500 KB)</small>
-                </div>
-                
-                <button class="btn btn-secondary mt-3" @click="showPaymentOptions = false">
-                  Batal
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Transfer Payment Modal -->
-          <div v-if="showQRCode" class="modal-overlay">
-            <div class="modal-container">
-              <h2 class="modal-header">Pembayaran Transfer</h2>
-
-              <div class="modal-body">
-                <img
-                  src="../assets/images/qris.jpg"
-                  alt="QR Code"
-                  class="qr-image"
-                />
-                
-                <div class="payment-details mt-3">
-                  <p><strong>Kode Pesanan:</strong> {{ pesan.kodePesanan }}</p>
-                  <p><strong>Total Pembayaran:</strong> Rp. {{ totalHarga }}</p>
-                  <p class="text-muted">Silakan transfer ke rekening yang tertera pada QR code di atas</p>
-                </div>
-
-                <div class="form-group mt-2">
-                  <label for="upload">Upload Bukti Pembayaran:</label>
-                  <input
-                    type="file"
-                    class="form-control"
-                    @change="onFileChange"
-                    accept="image/*"
-                  />
-                </div>
-
-                <div v-if="uploadingImage" class="text-center my-3">
-                  <div class="spinner-border text-primary" role="status">
-                    <span class="sr-only">Loading...</span>
-                  </div>
-                  <p>Sedang mengupload...</p>
-                </div>
-
-                <div class="button-group mt-3">
-                  <button
-                    class="btn btn-success"
-                    @click="uploadBuktiPembayaran"
-                    :disabled="!selectedFile || uploadingImage"
-                  >
-                    Konfirmasi Pembayaran
-                  </button>
-
-                  <button class="btn btn-secondary" @click="showQRCode = false">
-                    Tutup
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<script
+  src="https://app.sandbox.midtrans.com/snap/snap.js"
+  data-client-key="SB-Mid-client-G4UW4GVuovWp4RKT"
+></script>
 
 <script>
 import Navbar from "@/components/Navbar.vue";
@@ -199,38 +130,44 @@ import {
   doc,
   addDoc,
   updateDoc,
-  // query,
-  // where,
   getDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 
 export default {
   name: "Keranjang",
-  components: {
-    Navbar,
-  },
+  components: { Navbar },
   data() {
     return {
       keranjang: [],
       pesan: {
         nama: "",
         noMeja: "",
-        kodePesanan: ""
+        kodePesanan: "",
       },
       showPaymentOptions: false,
       showQRCode: false,
       showDirectPayment: false,
       selectedFile: null,
-      activePesananId: null, // Store the Firestore document ID
+      activePesananId: null,
       uploadingImage: false,
     };
+  },
+  computed: {
+    totalHarga() {
+      return this.keranjang.reduce(
+        (total, item) => total + item.product.harga * item.jumlah_pemesanan,
+        0
+      );
+    },
+  },
+  mounted() {
+    this.fetchKeranjang();
   },
   methods: {
     async fetchKeranjang() {
       try {
-        const keranjangRef = collection(db, "keranjang");
-        const querySnapshot = await getDocs(keranjangRef);
+        const querySnapshot = await getDocs(collection(db, "keranjang"));
         this.keranjang = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -239,272 +176,136 @@ export default {
         console.error("Gagal mengambil data keranjang: ", error);
       }
     },
+
     async hapusKeranjang(id) {
       try {
         await deleteDoc(doc(db, "keranjang", id));
         this.fetchKeranjang();
-        this.$toast.success("Item berhasil dihapus dari keranjang", {
-          type: "success",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
+        this.$toast.success("Item berhasil dihapus dari keranjang");
       } catch (error) {
         console.error("Gagal menghapus item: ", error);
       }
     },
+
+    async loadMidtransScript() {
+      if (window.snap) return; // sudah dimuat
+
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
+        script.setAttribute("data-client-key", "SB-Mid-client-G4UW4GVuovWp4RKT");
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+    },
+
     async checkout() {
       if (this.pesan.nama && this.pesan.noMeja && this.keranjang.length > 0) {
         try {
-          // Generate kode pesanan unik
+          await this.loadMidtransScript();
           const kodePesanan = `ORD-${Date.now().toString(36).toUpperCase()}`;
 
-          // Simpan data pesanan ke Firestore
           const docRef = await addDoc(collection(db, "pesanan"), {
             nama: this.pesan.nama,
             noMeja: this.pesan.noMeja,
             keranjang: this.keranjang,
-            kodePesanan: kodePesanan,
+            kodePesanan,
             waktuPesanan: new Date().toISOString(),
-            status: "pending", // Status pesanan: pending, paid, completed
-            metodePembayaran: null // Akan diisi nanti
+            status: "pending",
+            metodePembayaran: "midtrans",
           });
 
-          // Simpan kode pesanan dan document ID
           this.pesan.kodePesanan = kodePesanan;
           this.activePesananId = docRef.id;
 
-          this.$toast.success("Pesanan berhasil dibuat", {
-            type: "success",
-            position: "top-right",
-            duration: 3000,
-            dismissible: true,
-          });
-          
-          // Tampilkan opsi pembayaran
-          this.showPaymentOptions = true;
-          
+          const response = await fetch(
+            "http://localhost:3001/api/midtrans/create-transaction",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId: kodePesanan,
+                gross_amount: Number(this.totalHarga),
+                customerName: this.pesan.nama,
+              }),
+            }
+          );
+          console.log(response);
+          console.log("Type data totalHarga: ", typeof this.totalHarga);
+
+          const result = await response.json();
+
+          if (result.token) {
+            // Load Midtrans Snap
+            window.snap.pay(result.token, {
+              onSuccess: async (res) => {
+                const pesananDocRef = doc(db, "pesanan", this.activePesananId);
+                await updateDoc(pesananDocRef, {
+                  status: "paid",
+                  waktuPembayaran: new Date().toISOString(),
+                  midtransResponse: res,
+                });
+
+                const deletePromises = this.keranjang.map((item) =>
+                  deleteDoc(doc(db, "keranjang", item.id))
+                );
+                await Promise.all(deletePromises);
+
+                this.$router.push({
+                  path: "/pesanan-sukses",
+                  query: { kodePesanan: kodePesanan },
+                });
+              },
+              onPending: () => {
+                this.$toast.info("Transaksi masih dalam proses");
+              },
+              onError: (error) => {
+                this.$toast.error("Terjadi kesalahan saat proses pembayaran");
+                console.error(error);
+              },
+            });
+          }
         } catch (error) {
-          console.error("Terjadi kesalahan saat memproses checkout: ", error);
-          this.$toast.error("Gagal membuat pesanan", {
-            type: "error",
-            position: "top-right",
-            duration: 3000,
-            dismissible: true,
-          });
+          console.error("Checkout Error:", error);
         }
       } else {
-        let message = "Terjadi kesalahan:";
-        if (!this.pesan.nama) message += " Nama harus diisi.";
-        if (!this.pesan.noMeja) message += " Nomor meja harus diisi.";
-        if (this.keranjang.length === 0) message += " Keranjang kosong.";
-        
-        this.$toast.error(message, {
-          type: "error",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
+        this.$toast.error("Lengkapi data dan pastikan keranjang tidak kosong");
       }
     },
-    selectPaymentMethod(method) {
-      if (!this.activePesananId) {
-        this.$toast.error("Pesanan tidak ditemukan", {
-          type: "error",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
-        return;
-      }
-      
-      // Update metode pembayaran di Firestore
-      const updatePaymentMethod = async () => {
-        try {
-          const pesananDocRef = doc(db, "pesanan", this.activePesananId);
-          await updateDoc(pesananDocRef, {
-            metodePembayaran: method
-          });
-        } catch (error) {
-          console.error("Gagal mengupdate metode pembayaran:", error);
-        }
-      };
-      
-      // Tutup modal opsi pembayaran
-      this.showPaymentOptions = false;
-      
-      if (method === 'direct') {
-        // Tampilkan modal pembayaran langsung
-        updatePaymentMethod();
-        this.showDirectPayment = true;
-      } else if (method === 'transfer') {
-        // Tampilkan modal QR code dan upload bukti
-        updatePaymentMethod();
-        this.showQRCode = true;
-      }
+
+    onFileChange(e) {
+      this.selectedFile = e.target.files[0];
     },
-    onFileChange(event) {
-      this.selectedFile = event.target.files[0];
-    },
-    async uploadBuktiPembayaran() {
-      if (!this.selectedFile) {
-        this.$toast.error("Silakan pilih file untuk diupload", {
-          type: "error",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
-        return;
-      }
-      
-      if (!this.activePesananId) {
-        this.$toast.error("ID pesanan tidak ditemukan", {
-          type: "error",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
-        return;
-      }
-      
-      this.uploadingImage = true;
-      
-      try {
-        const formData = new FormData();
-        formData.append("file", this.selectedFile);
-        formData.append("upload_preset", "FoodItem"); // Sesuaikan dengan Cloudinary
-        formData.append("cloud_name", "dvx6l69vv"); // Sesuaikan dengan akun Cloudinary kamu
 
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/dvx6l69vv/image/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Gagal mengupload gambar");
-        }
-
-        const data = await response.json();
-        const buktiPembayaranUrl = data.secure_url;
-
-        // Update pesanan dengan bukti pembayaran
-        const pesananDocRef = doc(db, "pesanan", this.activePesananId);
-        
-        // Pastikan dokumen ada
-        const docSnap = await getDoc(pesananDocRef);
-        if (!docSnap.exists()) {
-          throw new Error("Pesanan tidak ditemukan");
-        }
-        
-        // Update dokumen dengan bukti pembayaran dan status
-        await updateDoc(pesananDocRef, {
-          buktiPembayaran: buktiPembayaranUrl,
-          status: "Dalam proses",
-          waktuPembayaran: new Date().toISOString()
-        });
-
-        // Hapus item dari keranjang setelah pembayaran berhasil
-        const deletePromises = this.keranjang.map((item) =>
-          deleteDoc(doc(db, "keranjang", item.id))
-        );
-        await Promise.all(deletePromises);
-        
-        this.$toast.success("Pembayaran berhasil", {
-          type: "success",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
-        
-        // Tutup modal dan redirect ke halaman sukses
-        this.showQRCode = false;
-        this.$router.push({
-          path: "/pesanan-sukses",
-          query: { kodePesanan: this.pesan.kodePesanan },
-        });
-        
-      } catch (error) {
-        console.error("Error uploading payment proof:", error);
-        this.$toast.error(`Gagal mengupload bukti pembayaran: ${error.message}`, {
-          type: "error",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
-      } finally {
-        this.uploadingImage = false;
-      }
-    },
     async completeDirectPayment() {
       try {
-        const pesananDocRef = doc(db, "pesanan", this.activePesananId);
-        await updateDoc(pesananDocRef, {
+        await updateDoc(doc(db, "pesanan", this.activePesananId), {
           status: "paid",
           waktuPembayaran: new Date().toISOString(),
-          pembayaranLangsung: true
+          pembayaranLangsung: true,
         });
-
-        const deletePromises = this.keranjang.map((item) =>
-          deleteDoc(doc(db, "keranjang", item.id))
+        await Promise.all(
+          this.keranjang.map((item) => deleteDoc(doc(db, "keranjang", item.id)))
         );
-        await Promise.all(deletePromises);
-
-        this.$toast.success("Pembayaran berhasil dicatat", {
-          type: "success",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
-
-        this.showDirectPayment = false;
         this.$router.push({
           path: "/pesanan-sukses",
           query: { kodePesanan: this.pesan.kodePesanan },
         });
-      } catch (error) {
-        console.error("Error completing direct payment:", error);
-        this.$toast.error(`Gagal mencatat pembayaran: ${error.message}`, {
-          type: "error",
-          position: "top-right",
-          duration: 3000,
-          dismissible: true,
-        });
+      } catch (err) {
+        console.error(err);
+        this.$toast.error("Gagal mencatat pembayaran langsung");
       }
     },
+
     async updateStatusToDalamProses(pesananId) {
-      try {
-        const pesananDocRef = doc(db, "pesanan", pesananId);
-        await updateDoc(pesananDocRef, {
-          status: "Dalam proses",
-        });
-        this.$toast.success("Status pesanan diperbarui ke 'Dalam proses'");
-      } catch (error) {
-        console.error("Gagal memperbarui status:", error);
-      }
+      await updateDoc(doc(db, "pesanan", pesananId), {
+        status: "Dalam proses",
+      });
     },
+
     async updateStatusToCompleted(pesananId) {
-      try {
-        const pesananDocRef = doc(db, "pesanan", pesananId);
-        await updateDoc(pesananDocRef, {
-          status: "completed",
-        });
-        this.$toast.success("Status pesanan diperbarui ke 'completed'");
-      } catch (error) {
-        console.error("Gagal memperbarui status:", error);
-      }
-    },
-  },
-  mounted() {
-    this.fetchKeranjang(); // Ambil data keranjang saat komponen dimuat
-  },
-  computed: {
-    totalHarga() {
-      return this.keranjang.reduce((total, item) => {
-        return total + item.product.harga * item.jumlah_pemesanan;
-      }, 0);
+      await updateDoc(doc(db, "pesanan", pesananId), { status: "completed" });
     },
   },
 };
@@ -570,7 +371,7 @@ export default {
 }
 
 .btn-oke {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
 }
 
