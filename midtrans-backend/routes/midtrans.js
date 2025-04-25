@@ -5,7 +5,7 @@ const midtransClient = require("midtrans-client");
 // Inisialisasi Midtrans Snap
 const snap = new midtransClient.Snap({
   isProduction: false, // true jika sudah live
-  serverKey: "SB-Mid-server-DdPua8zrwlNGIh_dIBjOo1Tn",
+  serverKey: "SB-Mid-server-QtakGUJ06kLWds3b4noo876B",
 });
 
 router.post("/create-transaction", async (req, res) => {

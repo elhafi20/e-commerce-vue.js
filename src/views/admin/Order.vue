@@ -15,7 +15,7 @@
               <th>#</th>
               <th>Kode Pesanan</th>
               <th>Nama Pelanggan</th>
-              <th>Nomor Meja</th>
+              <th>Alamat</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
@@ -72,36 +72,12 @@
 
         <div class="text-left">
           <p><strong>Nama:</strong> {{ selectedPesanan?.nama }}</p>
-          <p><strong>No Meja:</strong> {{ selectedPesanan?.noMeja }}</p>
+          <p><strong>Alamat:</strong> {{ selectedPesanan?.noMeja }}</p>
           <p><strong>Kode:</strong> {{ selectedPesanan?.kodePesanan }}</p>
           <p>
             <strong>Waktu:</strong>
             {{ new Date(selectedPesanan?.waktuPesanan).toLocaleString() }}
           </p>
-        </div>
-
-        <!-- Keep the thumbnail as is -->
-        <p v-if="selectedPesanan.buktiPembayaran">
-          <strong>Bukti pembayaran:</strong><br />
-          <img
-            :src="selectedPesanan.buktiPembayaran"
-            alt="Bukti Pembayaran"
-            class="bukti-pembayaran"
-            @click="previewImage(selectedPesanan.buktiPembayaran)"
-            style="
-              cursor: pointer;
-              max-width: 150px;
-              border: 1px solid #ddd;
-              border-radius: 4px;
-            "
-          />
-        </p>
-        <!-- Updated modal -->
-        <div v-if="showImageModal" class="image-modal" @click="closeModal">
-          <div class="image-modal-content" @click.stop>
-            <button class="close-button" @click="closeModal">&times;</button>
-            <img :src="previewImageUrl" alt="Preview" class="modal-image" />
-          </div>
         </div>
 
         <h3 class="modal-subtitle mt-3">Keranjang:</h3>
@@ -142,8 +118,6 @@ export default {
       selectedPesanan: null,
       showModal: false,
       showConfirmModal: false,
-      previewImageUrl: null,
-      showImageModal: false,
     };
   },
   methods: {
@@ -184,16 +158,6 @@ export default {
       } catch (error) {
         console.error("Gagal menghapus pesanan: ", error);
       }
-    },
-
-    closeModal() {
-      this.showImageModal = false;
-      document.body.style.overflow = "";
-    },
-    previewImage(url) {
-      this.previewImageUrl = url;
-      this.showImageModal = true;
-      document.body.style.overflow = "hidden";
     },
   },
   computed: {

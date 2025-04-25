@@ -94,9 +94,9 @@
               <input type="text" class="form-control" v-model="pesan.nama" />
             </div>
             <div class="form-group">
-              <label for="noMeja">Nomor Meja :</label>
+              <label for="noMeja">Alamat :</label>
               <input
-                type="number"
+                type="text"
                 class="form-control"
                 v-model="pesan.noMeja"
               />
@@ -118,7 +118,7 @@
 
 <script
   src="https://app.sandbox.midtrans.com/snap/snap.js"
-  data-client-key="SB-Mid-client-G4UW4GVuovWp4RKT"
+  data-client-key="SB-Mid-client-k0zN7lDhS3Eq4vNO"
 ></script>
 
 <script>
@@ -193,7 +193,7 @@ export default {
       return new Promise((resolve, reject) => {
         const script = document.createElement("script");
         script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
-        script.setAttribute("data-client-key", "SB-Mid-client-G4UW4GVuovWp4RKT");
+        script.setAttribute("data-client-key", "SB-Mid-client-k0zN7lDhS3Eq4vNO");
         script.onload = resolve;
         script.onerror = reject;
         document.body.appendChild(script);
@@ -237,34 +237,33 @@ export default {
           const result = await response.json();
 
           if (result.token) {
-            // Load Midtrans Snap
-            window.snap.pay(result.token, {
-              onSuccess: async (res) => {
-                const pesananDocRef = doc(db, "pesanan", this.activePesananId);
-                await updateDoc(pesananDocRef, {
-                  status: "paid",
-                  waktuPembayaran: new Date().toISOString(),
-                  midtransResponse: res,
-                });
+          window.snap.pay(result.token, {
+            onSuccess: async (res) => {
+              const pesananDocRef = doc(db, "pesanan", this.activePesananId);
+              await updateDoc(pesananDocRef, {
+                status: "paid",
+                waktuPembayaran: new Date().toISOString(),
+                midtransResponse: res,
+              });
 
-                const deletePromises = this.keranjang.map((item) =>
-                  deleteDoc(doc(db, "keranjang", item.id))
-                );
-                await Promise.all(deletePromises);
+              const deletePromises = this.keranjang.map((item) =>
+                deleteDoc(doc(db, "keranjang", item.id))
+              );
+              await Promise.all(deletePromises);
 
-                this.$router.push({
-                  path: "/pesanan-sukses",
-                  query: { kodePesanan: kodePesanan },
-                });
-              },
-              onPending: () => {
-                this.$toast.info("Transaksi masih dalam proses");
-              },
-              onError: (error) => {
-                this.$toast.error("Terjadi kesalahan saat proses pembayaran");
-                console.error(error);
-              },
-            });
+              this.$router.push({
+                path: "/pesanan-sukses",
+                query: { kodePesanan },
+              });
+            },
+            onPending: () => {
+              this.$toast.info("Transaksi masih dalam proses");
+            },
+            onError: (error) => {
+              this.$toast.error("Terjadi kesalahan saat proses pembayaran");
+              console.error(error);
+            },
+          });
           }
         } catch (error) {
           console.error("Checkout Error:", error);

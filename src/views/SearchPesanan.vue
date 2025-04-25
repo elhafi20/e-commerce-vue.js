@@ -23,7 +23,7 @@
 
           <div class="modal-body">
             <p><strong>Nama:</strong> {{ selectedPesanan.nama }}</p>
-            <p><strong>Nomor Meja:</strong> {{ selectedPesanan.noMeja }}</p>
+            <p><strong>Alamat:</strong> {{ selectedPesanan.noMeja }}</p>
             <p>
               <strong>Kode Pesanan:</strong> {{ selectedPesanan.kodePesanan }}
             </p>

@@ -13,7 +13,7 @@
             <thead>
               <tr class="bg-gray-200">
                 <th class="border border-gray-400 px-4 py-2">Nama</th>
-                <th class="border border-gray-400 px-4 py-2">No Meja</th>
+                <th class="border border-gray-400 px-4 py-2">Alamat</th>
                 <th class="border border-gray-400 px-4 py-2">Nama Makanan</th>
                 <!-- <th class="border border-gray-400 px-4 py-2">Jumlah</th> -->
                 <th class="border border-gray-400 px-4 py-2">Harga</th>
